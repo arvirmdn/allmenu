@@ -2,12 +2,13 @@
 <html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
+  <!-- Mencegah zoom di perangkat seluler -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>arvirmdn - iOS Hub</title>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body>
 
@@ -19,7 +20,10 @@
   <div class="ios-app">
     <!-- Header Topbar iOS -->
     <header class="ios-header">
-      <span class="app-title">arvirmdn</span>
+      <div class="header-brand">
+        <span class="app-title">arvirmdn</span>
+        <i class="fa-solid fa-circle-check verified-badge" title="Verified"></i>
+      </div>
       <div class="header-actions">
         <button id="theme-toggle" class="ios-btn-icon" title="Ganti Mode">
           <i class="fa-solid fa-moon"></i>
@@ -37,7 +41,10 @@
             <i class="fa-solid fa-music"></i>
           </button>
         </div>
-        <h1 class="profile-name">arvirmdn</h1>
+        <div class="profile-name-container">
+          <h1 class="profile-name">arvirmdn</h1>
+          <i class="fa-solid fa-circle-check verified-badge" title="Verified"></i>
+        </div>
         <p class="profile-bio">Digital Creator & Developer</p>
       </section>
 
@@ -45,11 +52,12 @@
       <section class="ios-section">
         <h2 class="section-label">Navigasi Utama</h2>
         
-        <a href="https://arvirmdn.github.io/arvirmdn-AI/" target="_blank" class="ios-list-item">
-          <div class="item-icon icon-blue"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <!-- Menu Donate Barunya -->
+        <a href="#" class="ios-list-item" onclick="alert('Terima kasih dukungannya! Rekening / QRIS dapat disesuaikan di file index.html'); return false;">
+          <div class="item-icon icon-amber"><i class="fa-solid fa-heart"></i></div>
           <div class="item-text">
-            <span class="item-title">arvirmdn.ai</span>
-            <span class="item-sub">Asisten AI Cerdas & Pembuat Kode</span>
+            <span class="item-title">Donate</span>
+            <span class="item-sub">donate arvirmdn agar web lebih berkembang</span>
           </div>
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
@@ -104,6 +112,6 @@
     </nav>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=3.0"></script>
 </body>
 </html>

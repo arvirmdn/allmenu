@@ -10,6 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let isPlaying = false;
 
+  // Mencegah Zoom Gestur Pinch di HP
+  document.addEventListener('touchmove', (e) => {
+    if (e.scale !== undefined && e.scale !== 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
   // 1. Fitur Toggle Dark/Light Mode
   themeToggle.addEventListener('click', () => {
     const currentTheme = document.documentElement.getAttribute('data-theme');
