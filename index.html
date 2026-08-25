@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>arvirmdn - All Menu & Tools</title>
+  
+  <!-- FontAwesome Icon & Google Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Audio Element untuk Musik Background -->
+  <audio id="bg-music" loop>
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="wrapper">
+    <!-- Profile Header -->
+    <header class="profile">
+      <div class="avatar-box">
+        <img src="https://ui-avatars.com/api/?name=arvirmdn&background=5436da&color=fff&size=128" alt="Profile" class="avatar">
+        <button id="music-btn" class="music-toggle" title="Putar Musik">
+          <i class="fa-solid fa-music"></i>
+        </button>
+      </div>
+      <h1 class="username">arvirmdn</h1>
+      <p class="bio">All-in-One Downloader & Digital Hub</p>
+    </header>
+
+    <!-- Fitur Downloader TikTok -->
+    <section class="card downloader-box">
+      <div class="card-header">
+        <i class="fa-brands fa-tiktok tiktok-icon"></i>
+        <span>TikTok Downloader</span>
+      </div>
+      <p class="card-desc">Unduh video HD tanpa watermark atau MP3 audio.</p>
+
+      <div class="input-container">
+        <input type="url" id="tiktok-url" placeholder="Tempel link video TikTok di sini..." autocomplete="off">
+        <button id="download-btn" class="btn-download">
+          <i class="fa-solid fa-arrow-down-long"></i>
+        </button>
+      </div>
+
+      <div id="result-box" class="result-box" style="display: none;"></div>
+    </section>
+
+    <!-- Navigasi Menu / Links -->
+    <section class="links-section">
+      <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> Navigasi Utama</h2>
+
+      <a href="https://arvirmdn.github.io/arvirmdn-AI/" target="_blank" class="menu-card">
+        <div class="menu-icon ai-bg"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="menu-info">
+          <span class="menu-title">arvirmdn.ai</span>
+          <span class="menu-sub">Asisten AI Cerdas & Pembuat Kode</span>
+        </div>
+        <i class="fa-solid fa-chevron-right arrow-icon"></i>
+      </a>
+
+      <a href="#" class="menu-card" onclick="alert('Playlist musik dapat disesuaikan di file script.js!'); return false;">
+        <div class="menu-icon music-bg"><i class="fa-solid fa-compact-disc"></i></div>
+        <div class="menu-info">
+          <span class="menu-title">Music Player</span>
+          <span class="menu-sub">Putar musik favorit di latar belakang</span>
+        </div>
+        <i class="fa-solid fa-chevron-right arrow-icon"></i>
+      </a>
+
+      <a href="https://t.me/" target="_blank" class="menu-card">
+        <div class="menu-icon contact-bg"><i class="fa-solid fa-paper-plane"></i></div>
+        <div class="menu-info">
+          <span class="menu-title">Hubungi Saya</span>
+          <span class="menu-sub">Kontak Telegram / Whatsapp</span>
+        </div>
+        <i class="fa-solid fa-chevron-right arrow-icon"></i>
+      </a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>&copy; 2026 <strong>arvirmdn</strong>. Made with ❤️</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
