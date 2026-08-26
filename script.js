@@ -5,10 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
   const downloadBtn = document.getElementById('download-btn');
-  const tiktokUrlInput = document.getElementById('tiktok-url');
+  const mediaUrlInput = document.getElementById('media-url');
   const resultBox = document.getElementById('result-box');
+  const platformBtns = document.querySelectorAll('.platform-btn');
 
   let isPlaying = false;
+  let currentPlatform = 'tiktok';
 
   // Mencegah Zoom Gestur Pinch di HP
   document.addEventListener('touchmove', (e) => {
@@ -53,43 +55,98 @@ document.addEventListener('DOMContentLoaded', () => {
     isPlaying = !isPlaying;
   });
 
-  // 4. Fitur TikTok Downloader (TikWM API)
+  // 4. Pilih Platform Downloader
+  platformBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      platformBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentPlatform = btn.getAttribute('data-platform');
+      resultBox.style.display = 'none';
+      mediaUrlInput.value = '';
+    });
+  });
+
+  // 5. Sistem Multi-API / Fallback Downloader
+  async function tryAPIs(apis) {
+    for (let i = 0; i < apis.length; i++) {
+      try {
+        const res = await fetch(apis[i]);
+        if (!res.ok) throw new Error('API Error');
+        const data = await res.json();
+        if (data.code === 0 || data.success || data.status === 'success') {
+          return data; // Jika berhasil, langsung kembalikan data
+        }
+        throw new Error('API tidak valid');
+      } catch (err) {
+        console.warn(`API ke-${i + 1} gagal, mencoba berikutnya...`);
+      }
+    }
+    throw new Error('Semua API gagal');
+  }
+
   downloadBtn.addEventListener('click', async () => {
-    const url = tiktokUrlInput.value.trim();
+    const url = mediaUrlInput.value.trim();
     if (!url) {
-      alert("Masukkan tautan TikTok terlebih dahulu!");
+      alert("Masukkan tautan terlebih dahulu!");
       return;
     }
 
     resultBox.style.display = 'block';
     resultBox.innerHTML = '<div style="text-align:center; color:var(--text-sub);"><i class="fa-solid fa-spinner fa-spin"></i> Memproses video...</div>';
 
-    try {
-      const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
-      const data = await res.json();
+    const encodedUrl = encodeURIComponent(url);
 
-      if (data.code === 0) {
-        const v = data.data;
-        resultBox.innerHTML = `
-          <div style="display:flex; flex-direction:column; gap:10px;">
-            <div style="display:flex; gap:10px; align-items:center;">
-              <img src="${v.cover}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;">
-              <div style="overflow:hidden;">
-                <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.title || 'Video TikTok'}</p>
-                <p style="font-size:11px; color:var(--text-sub);">@${v.author.unique_id}</p>
-              </div>
-            </div>
-            <div style="display:flex; gap:8px;">
-              <a href="${v.play}" target="_blank" download style="flex:1; text-align:center; background:var(--ios-blue); color:#fff; padding:8px; border-radius:10px; text-decoration:none; font-size:12px; font-weight:600;">Unduh Video</a>
-              <a href="${v.music}" target="_blank" download style="flex:1; text-align:center; background:var(--card-bg); color:var(--text-main); border:1px solid var(--border-color); padding:8px; border-radius:10px; text-decoration:none; font-size:12px; font-weight:600;">Unduh MP3</a>
+    // Daftar API cadangan berdasarkan platform
+    let apis = [];
+    if (currentPlatform === 'tiktok') {
+      apis = [
+        `https://www.tikwm.com/api/?url=${encodedUrl}`,
+        `https://api.vevioz.com/api/button/tiktok?url=${encodedUrl}`,
+        `https://tikwm.com/api/?url=${encodedUrl}`
+      ];
+    } else if (currentPlatform === 'youtube') {
+      apis = [
+        `https://api.vevioz.com/api/button/mp3?url=${encodedUrl}`,
+        `https://api.downloadly.app/api/youtube?url=${encodedUrl}`,
+        `https://api.vevioz.com/api/button/mp4?url=${encodedUrl}`
+      ];
+    } else if (currentPlatform === 'instagram') {
+      apis = [
+        `https://api.vevioz.com/api/button/instagram?url=${encodedUrl}`,
+        `https://api.downloadly.app/api/instagram?url=${encodedUrl}`
+      ];
+    } else if (currentPlatform === 'facebook') {
+      apis = [
+        `https://api.vevioz.com/api/button/facebook?url=${encodedUrl}`,
+        `https://api.downloadly.app/api/facebook?url=${encodedUrl}`
+      ];
+    }
+
+    try {
+      // Coba semua API sampai ada yang berhasil
+      const data = await tryAPIs(apis);
+
+      // Tampilkan hasil (format dasar)
+      let videoUrl = data.data?.play || data.url || data.link || data.video;
+      let title = data.data?.title || 'Media Berhasil Diunduh';
+      let cover = data.data?.cover || '';
+
+      resultBox.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; gap:10px; align-items:center;">
+            ${cover ? `<img src="${cover}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;">` : ''}
+            <div style="overflow:hidden;">
+              <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</p>
+              <p style="font-size:11px; color:var(--text-sub);">Berhasil diproses!</p>
             </div>
           </div>
-        `;
-      } else {
-        resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal! Pastikan link video TikTok valid.</span>';
-      }
+          <div style="display:flex; gap:8px;">
+            <a href="${videoUrl}" target="_blank" download style="flex:1; text-align:center; background:var(--ios-blue); color:#fff; padding:8px; border-radius:10px; text-decoration:none; font-size:12px; font-weight:600;">Unduh Media</a>
+          </div>
+        </div>
+      `;
     } catch (err) {
-      resultBox.innerHTML = '<span style="color:#ff3b30;">Terjadi kesalahan koneksi.</span>';
+      resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal! Semua API sedang gangguan atau link tidak valid.</span>';
     }
   });
 });

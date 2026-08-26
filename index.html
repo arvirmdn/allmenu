@@ -2,13 +2,12 @@
 <html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <!-- Mencegah zoom di perangkat seluler -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>arvirmdn - Vintage Hub</title>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=5.0">
 </head>
 <body>
 
@@ -52,8 +51,8 @@
       <section class="ios-section">
         <h2 class="section-label">Navigasi Utama</h2>
         
-        <!-- Menu Donate Barunya -->
-        <a href="#" class="ios-list-item" onclick="alert('Terima kasih dukungannya! Rekening / QRIS dapat disesuaikan di file index.html'); return false;">
+        <!-- Menu Donate (Link Diperbarui) -->
+        <a href="https://arvirmdn.github.io/donate/" target="_blank" class="ios-list-item">
           <div class="item-icon icon-amber"><i class="fa-solid fa-heart"></i></div>
           <div class="item-text">
             <span class="item-title">Donate</span>
@@ -62,11 +61,31 @@
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
 
-        <a href="https://t.me/" target="_blank" class="ios-list-item">
-          <div class="item-icon icon-pink"><i class="fa-solid fa-paper-plane"></i></div>
+        <!-- Hubungi Saya (WhatsApp dengan pesan otomatis) -->
+        <a href="https://wa.me/6283117949780?text=HALO%20MASEH%20!" target="_blank" class="ios-list-item">
+          <div class="item-icon icon-pink"><i class="fa-brands fa-whatsapp"></i></div>
           <div class="item-text">
             <span class="item-title">Hubungi Saya</span>
-            <span class="item-sub">Telegram & Whatsapp Official</span>
+            <span class="item-sub">WhatsApp: 083117949780</span>
+          </div>
+          <i class="fa-solid fa-chevron-right item-arrow"></i>
+        </a>
+
+        <!-- Join Group & Saluran (Ganti # dengan link asli kamu) -->
+        <a href="https://chat.whatsapp.com/DvBYvvQaob3BaqW0icEWaS?s=cl&p=a&ilr=4" target="_blank" class="ios-list-item">
+          <div class="item-icon icon-blue"><i class="fa-solid fa-users"></i></div>
+          <div class="item-text">
+            <span class="item-title">Join Group</span>
+            <span class="item-sub">Gabung komunitas kami</span>
+          </div>
+          <i class="fa-solid fa-chevron-right item-arrow"></i>
+        </a>
+
+        <a href="https://t.me/username_channel_kamu" target="_blank" class="ios-list-item">
+          <div class="item-icon icon-green"><i class="fa-solid fa-bullhorn"></i></div>
+          <div class="item-text">
+            <span class="item-title">Join Saluran</span>
+            <span class="item-sub">Ikuti update terbaru</span>
           </div>
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
@@ -79,16 +98,17 @@
         <h2 class="section-label">Media Downloader</h2>
         
         <div class="ios-card downloader-card">
-          <div class="card-title-row">
-            <div class="item-icon icon-red"><i class="fa-brands fa-tiktok"></i></div>
-            <div>
-              <span class="item-title">TikTok Downloader</span>
-              <span class="item-sub">Unduh Video HD & Audio MP3</span>
-            </div>
+          
+          <!-- Pilihan Platform -->
+          <div class="platform-selector">
+            <button class="platform-btn active" data-platform="tiktok"><i class="fa-brands fa-tiktok"></i> TikTok</button>
+            <button class="platform-btn" data-platform="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
+            <button class="platform-btn" data-platform="instagram"><i class="fa-brands fa-instagram"></i> Insta</button>
+            <button class="platform-btn" data-platform="facebook"><i class="fa-brands fa-facebook"></i> FB</button>
           </div>
 
           <div class="ios-input-group">
-            <input type="url" id="tiktok-url" placeholder="Tempel link video TikTok di sini..." autocomplete="off">
+            <input type="url" id="media-url" placeholder="Tempel link video di sini..." autocomplete="off">
             <button id="download-btn" class="ios-btn-primary">
               <i class="fa-solid fa-arrow-down"></i>
             </button>
@@ -112,6 +132,6 @@
     </nav>
   </div>
 
-  <script src="script.js?v=4.0"></script>
+  <script src="script.js?v=5.0"></script>
 </body>
 </html>

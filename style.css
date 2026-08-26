@@ -9,6 +9,7 @@
   --tab-bg: rgba(43, 33, 29, 0.96);
   --accent-red: #a75d45;
   --accent-green: #7e8a62;
+  --accent-blue: #5a7fa8;
 }
 
 [data-theme="light"] {
@@ -22,6 +23,7 @@
   --tab-bg: rgba(231, 213, 181, 0.96);
   --accent-red: #9f5540;
   --accent-green: #687450;
+  --accent-blue: #4a6a8a;
 }
 
 * {
@@ -34,7 +36,6 @@
   -webkit-user-select: none;
 }
 
-/* Kunci Scroll & Gestur Zoom di Layar */
 html, body {
   width: 100vw;
   height: 100vh;
@@ -72,7 +73,6 @@ body::before {
   z-index: 20;
 }
 
-/* Header iOS Topbar */
 .ios-header {
   padding: 16px 20px;
   display: flex;
@@ -97,7 +97,6 @@ body::before {
   letter-spacing: 0.2px;
 }
 
-/* Centang Biru verified */
 .verified-badge {
   color: var(--ios-blue);
   font-size: 15px;
@@ -117,7 +116,6 @@ body::before {
   font-size: 14px;
 }
 
-/* Container Tab Content (Area Dalam yang Boleh Di-scroll Jika Konten Panjang) */
 .tab-content {
   flex: 1;
   overflow-y: auto;
@@ -133,7 +131,6 @@ body::before {
   display: flex;
 }
 
-/* Profile Card iOS Style */
 .ios-card {
   background: var(--card-bg);
   box-shadow: 0 10px 0 rgba(33, 22, 17, 0.18);
@@ -218,7 +215,6 @@ body::before {
   margin-top: 2px;
 }
 
-/* List Item Navigation iOS */
 .ios-section {
   display: flex;
   flex-direction: column;
@@ -268,6 +264,8 @@ body::before {
 .icon-amber { background: #b77b45; }
 .icon-pink { background: #8a5960; }
 .icon-red { background: var(--accent-red); }
+.icon-blue { background: var(--accent-blue); }
+.icon-green { background: var(--accent-green); }
 
 .item-text {
   flex: 1;
@@ -293,6 +291,32 @@ body::before {
 }
 
 /* Downloader Form iOS */
+.platform-selector {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 6px;
+}
+
+.platform-btn {
+  flex: 1;
+  background: var(--input-bg);
+  color: var(--text-sub);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 10px 0;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.platform-btn.active {
+  background: var(--ios-blue);
+  color: #fff;
+  border-color: var(--ios-blue);
+}
+
 .card-title-row {
   display: flex;
   align-items: center;
