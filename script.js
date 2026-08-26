@@ -59,14 +59,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Logika Fallback API yang Lebih Kuat (Menerima code 0, 200, atau success)
   async function tryAPIs(apis) {
     for (let i = 0; i < apis.length; i++) {
       try {
         const res = await fetch(apis[i]);
-        if (!res.ok) throw new Error('API Error');
+        if (!res.ok) throw new Error('HTTP Error: ' + res.status);
         const data = await res.json();
-        // Cek apakah data valid dan memiliki link video
-        if (data.code === 0 || data.success || data.status === 'success') {
+        
+        // Deteksi sukses yang lebih fleksibel
+        const isSuccess = data.code === 0 || data.code === 200 || data.success === true || data.status === 'success';
+        
+        if (isSuccess) {
           return data; 
         }
         throw new Error('API tidak valid');
@@ -89,21 +93,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const encodedUrl = encodeURIComponent(url);
 
+    // Daftar API Cadangan yang Diperbanyak
     let apis = [];
     if (currentPlatform === 'tiktok') {
       apis = [
         `https://www.tikwm.com/api/?url=${encodedUrl}`,
-        `https://tikwm.com/api/?url=${encodedUrl}`
+        `https://tikwm.com/api/?url=${encodedUrl}`,
+        `https://api.vevioz.com/api/button/tiktok?url=${encodedUrl}`
       ];
     } else if (currentPlatform === 'youtube') {
       apis = [
         `https://api.vevioz.com/api/button/mp3?url=${encodedUrl}`,
+        `https://api.vevioz.com/api/button/mp4?url=${encodedUrl}`,
         `https://api.downloadly.app/api/youtube?url=${encodedUrl}`
       ];
     } else if (currentPlatform === 'instagram') {
       apis = [
         `https://api.vevioz.com/api/button/instagram?url=${encodedUrl}`,
-        `https://api.downloadly.app/api/instagram?url=${encodedUrl}`
+        `https://api.downloadly.app/api/instagram?url=${encodedUrl}`,
+        `https://api.snapinsta.app/api/v1/instagram?url=${encodedUrl}`
       ];
     } else if (currentPlatform === 'facebook') {
       apis = [
@@ -116,11 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await tryAPIs(apis);
 
       // === EKSTRAKSI DATA HD (PRIORITAS TERTINGGI) ===
-      // Cari video HD (wmplay untuk TikTok adalah versi HD tanpa watermark)
       let videoUrl = data.data?.wmplay || data.data?.hdplay || data.data?.play || 
                      data.data?.url || data.url || data.link || data.data?.video || "";
       
-      // Cari Audio MP3
       let audioUrl = data.data?.music || data.data?.audio || data.audio || data.mp3 || "";
 
       // Jika API mengembalikan HTML (Vevioz), kita ekstrak link mp4/mp3 via Regex
@@ -136,22 +142,16 @@ document.addEventListener('DOMContentLoaded', () => {
       let cover = data.data?.cover || data.cover || '';
       let title = data.data?.title || 'Media Berhasil Diproses (HD)';
 
-      // === TAMPILKAN HASIL ===
-      let htmlButtons = `
-        <div style="display:flex; gap:8px;">
-      `;
+      let htmlButtons = `<div style="display:flex; gap:8px;">`;
       
-      // Tampilkan tombol MP4 hanya jika ada link video
       if (videoUrl) {
         htmlButtons += `<a href="${videoUrl}" target="_blank" download class="download-option-btn" style="background:var(--ios-blue);">⬇️ Unduh MP4 (HD)</a>`;
       }
       
-      // Tampilkan tombol MP3 hanya jika ada link audio
       if (audioUrl) {
         htmlButtons += `<a href="${audioUrl}" target="_blank" download class="download-option-btn" style="background:var(--accent-green);">🎵 Unduh MP3</a>`;
       }
       
-      // Jika dua-duanya kosong
       if (!videoUrl && !audioUrl) {
         resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal mendapatkan link HD. API mungkin tidak mendukung media ini.</span>';
         return;
@@ -165,14 +165,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ${cover ? `<img src="${cover}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;">` : ''}
             <div style="overflow:hidden;">
               <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</p>
-              <p style="font-size:11px; color:var(--text-sub);">Kualitas HD</p>
+              <p style="font-size:11px; color:var(--text-sub);">Kualitas Terbaik Tersedia</p>
             </div>
           </div>
           ${htmlButtons}
         </div>
       `;
     } catch (err) {
-      resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal! Semua API sedang gangguan atau link tidak valid.</span>';
+      resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal! Semua API sedang gangguan. Coba lagi nanti atau ganti link.</span>';
     }
   });
 });
