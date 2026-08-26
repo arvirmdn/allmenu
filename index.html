@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=6.0">
+  <link rel="stylesheet" href="style.css?v=7.0">
 </head>
 <body>
 
@@ -64,7 +64,6 @@
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
 
-        <!-- LINK GROUP WHATSAPP SUDAH DI MASUKKAN -->
         <a href="https://chat.whatsapp.com/DvBYvvQaob3BaqW0icEWaS?s=cl&p=a&ilr=4" target="_blank" class="ios-list-item">
           <div class="item-icon icon-blue"><i class="fa-brands fa-whatsapp"></i></div>
           <div class="item-text">
@@ -74,7 +73,6 @@
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
 
-        <!-- LINK SALURAN WHATSAPP SUDAH DI MASUKKAN -->
         <a href="https://whatsapp.com/channel/0029Vb8IVjIEAKWNMn0ZG50F" target="_blank" class="ios-list-item">
           <div class="item-icon icon-green"><i class="fa-brands fa-whatsapp"></i></div>
           <div class="item-text">
@@ -94,14 +92,15 @@
           
           <div class="platform-selector">
             <button class="platform-btn active" data-platform="tiktok"><i class="fa-brands fa-tiktok"></i> TikTok</button>
-            <button class="platform-btn" data-platform="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
-            <button class="platform-btn" data-platform="instagram"><i class="fa-brands fa-instagram"></i> Insta</button>
-            <button class="platform-btn" data-platform="facebook"><i class="fa-brands fa-facebook"></i> FB</button>
+            
+            <!-- TOMBOL DIKUNCI -->
+            <button class="platform-btn platform-disabled" data-platform="youtube" disabled><i class="fa-brands fa-youtube"></i> YouTube</button>
+            <button class="platform-btn platform-disabled" data-platform="instagram" disabled><i class="fa-brands fa-instagram"></i> Insta</button>
+            <button class="platform-btn platform-disabled" data-platform="facebook" disabled><i class="fa-brands fa-facebook"></i> FB</button>
           </div>
 
           <div class="ios-input-group">
-            <input type="url" id="media-url" placeholder="Tempel link video di sini..." autocomplete="off">
-            <!-- Tombol diganti menjadi 3 titik -->
+            <input type="url" id="media-url" placeholder="Tempel link TikTok di sini..." autocomplete="off">
             <button id="download-btn" class="ios-btn-primary">
               <i class="fa-solid fa-ellipsis"></i>
             </button>
@@ -124,6 +123,6 @@
     </nav>
   </div>
 
-  <script src="script.js?v=6.0"></script>
+  <script src="script.js?v=7.0"></script>
 </body>
 </html>

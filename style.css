@@ -422,3 +422,17 @@ body::before {
   width: 0px;
   background: transparent;
 }
+
+/* ===== GAYA UNTUK TOMBOL YANG DIKUNCI (BARU) ===== */
+.platform-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--border-color) !important;
+  color: var(--text-sub) !important;
+  border-color: var(--border-color) !important;
+  pointer-events: none; /* Mencegah klik sama sekali */
+}
+
+.platform-disabled i {
+  opacity: 0.6;
+}

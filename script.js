@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const platformBtns = document.querySelectorAll('.platform-btn');
 
   let isPlaying = false;
-  let currentPlatform = 'tiktok';
+  let currentPlatform = 'tiktok'; // Hanya TikTok yang aktif
 
   document.addEventListener('touchmove', (e) => {
     if (e.scale !== undefined && e.scale !== 1) {
@@ -49,8 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
     isPlaying = !isPlaying;
   });
 
+  // Platform buttons (hanya TikTok yang berfungsi)
   platformBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      // Jika tombol disabled, jangan lakukan apa-apa
+      if (btn.disabled) return;
+
       platformBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentPlatform = btn.getAttribute('data-platform');
@@ -59,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Logika Fallback API yang Lebih Kuat (Menerima code 0, 200, atau success)
   async function tryAPIs(apis) {
     for (let i = 0; i < apis.length; i++) {
       try {
@@ -67,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) throw new Error('HTTP Error: ' + res.status);
         const data = await res.json();
         
-        // Deteksi sukses yang lebih fleksibel
         const isSuccess = data.code === 0 || data.code === 200 || data.success === true || data.status === 'success';
         
         if (isSuccess) {
@@ -84,7 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
   downloadBtn.addEventListener('click', async () => {
     const url = mediaUrlInput.value.trim();
     if (!url) {
-      alert("Masukkan tautan terlebih dahulu!");
+      alert("Masukkan tautan TikTok terlebih dahulu!");
+      return;
+    }
+
+    // Cegah jika platform selain TikTok dipilih (walaupun tombolnya dikunci)
+    if (currentPlatform !== 'tiktok') {
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<span style="color:#ff3b30;">⚠️ Fitur YouTube, Instagram, dan Facebook sedang dalam perbaikan. Gunakan TikTok untuk saat ini.</span>';
       return;
     }
 
@@ -93,43 +102,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const encodedUrl = encodeURIComponent(url);
 
-    // Daftar API Cadangan yang Diperbanyak
-    let apis = [];
-    if (currentPlatform === 'tiktok') {
-      apis = [
-        `https://www.tikwm.com/api/?url=${encodedUrl}`,
-        `https://tikwm.com/api/?url=${encodedUrl}`,
-        `https://api.vevioz.com/api/button/tiktok?url=${encodedUrl}`
-      ];
-    } else if (currentPlatform === 'youtube') {
-      apis = [
-        `https://api.vevioz.com/api/button/mp3?url=${encodedUrl}`,
-        `https://api.vevioz.com/api/button/mp4?url=${encodedUrl}`,
-        `https://api.downloadly.app/api/youtube?url=${encodedUrl}`
-      ];
-    } else if (currentPlatform === 'instagram') {
-      apis = [
-        `https://api.vevioz.com/api/button/instagram?url=${encodedUrl}`,
-        `https://api.downloadly.app/api/instagram?url=${encodedUrl}`,
-        `https://api.snapinsta.app/api/v1/instagram?url=${encodedUrl}`
-      ];
-    } else if (currentPlatform === 'facebook') {
-      apis = [
-        `https://api.vevioz.com/api/button/facebook?url=${encodedUrl}`,
-        `https://api.downloadly.app/api/facebook?url=${encodedUrl}`
-      ];
-    }
+    // Hanya TikTok yang punya API list
+    let apis = [
+      `https://www.tikwm.com/api/?url=${encodedUrl}`,
+      `https://tikwm.com/api/?url=${encodedUrl}`,
+      `https://api.vevioz.com/api/button/tiktok?url=${encodedUrl}`
+    ];
 
     try {
       const data = await tryAPIs(apis);
 
-      // === EKSTRAKSI DATA HD (PRIORITAS TERTINGGI) ===
       let videoUrl = data.data?.wmplay || data.data?.hdplay || data.data?.play || 
                      data.data?.url || data.url || data.link || data.data?.video || "";
       
       let audioUrl = data.data?.music || data.data?.audio || data.audio || data.mp3 || "";
 
-      // Jika API mengembalikan HTML (Vevioz), kita ekstrak link mp4/mp3 via Regex
       if (typeof videoUrl === 'string' && videoUrl.includes('<')) {
         const urlMatch = videoUrl.match(/href="([^"]+\.(mp4|mov|webm)[^"]*)"/i);
         if (urlMatch) videoUrl = urlMatch[1];
@@ -140,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       let cover = data.data?.cover || data.cover || '';
-      let title = data.data?.title || 'Media Berhasil Diproses (HD)';
+      let title = data.data?.title || 'Video TikTok Berhasil Diproses';
 
       let htmlButtons = `<div style="display:flex; gap:8px;">`;
       
@@ -153,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       if (!videoUrl && !audioUrl) {
-        resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal mendapatkan link HD. API mungkin tidak mendukung media ini.</span>';
+        resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal mendapatkan link. Coba link lain.</span>';
         return;
       }
 
@@ -172,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
     } catch (err) {
-      resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal! Semua API sedang gangguan. Coba lagi nanti atau ganti link.</span>';
+      resultBox.innerHTML = '<span style="color:#ff3b30;">Gagal! API TikTok sedang gangguan. Coba lagi nanti.</span>';
     }
   });
 });
