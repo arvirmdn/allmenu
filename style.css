@@ -1,18 +1,4 @@
 :root {
-  --bg-color: #2b211d;
-  --card-bg: #46352c;
-  --text-main: #f4e5c3;
-  --text-sub: #c5a984;
-  --border-color: rgba(231, 196, 139, 0.28);
-  --input-bg: #352821;
-  --ios-blue: #c18b52;
-  --tab-bg: rgba(43, 33, 29, 0.96);
-  --accent-red: #a75d45;
-  --accent-green: #7e8a62;
-  --accent-blue: #5a7fa8;
-}
-
-[data-theme="light"] {
   --bg-color: #e7d5b5;
   --card-bg: #f3e7cc;
   --text-main: #382a22;
@@ -24,6 +10,20 @@
   --accent-red: #9f5540;
   --accent-green: #687450;
   --accent-blue: #4a6a8a;
+}
+
+[data-theme="dark"] {
+  --bg-color: #2b211d;
+  --card-bg: #46352c;
+  --text-main: #f4e5c3;
+  --text-sub: #c5a984;
+  --border-color: rgba(231, 196, 139, 0.28);
+  --input-bg: #352821;
+  --ios-blue: #c18b52;
+  --tab-bg: rgba(43, 33, 29, 0.96);
+  --accent-red: #a75d45;
+  --accent-green: #7e8a62;
+  --accent-blue: #5a7fa8;
 }
 
 * {
@@ -290,7 +290,6 @@ body::before {
   color: var(--text-sub);
 }
 
-/* Downloader Form iOS */
 .platform-selector {
   display: flex;
   justify-content: space-between;
@@ -348,8 +347,9 @@ body::before {
   border: none;
   border-radius: 4px;
   padding: 0 16px;
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
+  min-width: 50px;
 }
 
 .result-box {
@@ -362,7 +362,19 @@ body::before {
   -webkit-user-select: text;
 }
 
-/* Bottom Navigation Bar iOS */
+/* Tombol untuk Pilihan MP4 / MP3 */
+.download-option-btn {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  display: block;
+}
+
 .ios-tab-bar {
   position: absolute;
   bottom: 0;

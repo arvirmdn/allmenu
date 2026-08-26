@@ -2,39 +2,33 @@
 <html lang="id" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <!-- Mencegah zoom di perangkat seluler -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>arvirmdn - Vintage Hub</title>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=5.0">
+  <link rel="stylesheet" href="style.css?v=6.0">
 </head>
 <body>
 
-  <!-- Audio Background -->
   <audio id="bg-music" loop>
     <source src="music.mp3" type="audio/mpeg">
   </audio>
 
   <div class="ios-app">
-    <!-- Header Topbar iOS -->
     <header class="ios-header">
       <div class="header-brand">
         <span class="app-title">arvirmdn</span>
         <i class="fa-solid fa-circle-check verified-badge" title="Verified"></i>
       </div>
       <div class="header-actions">
-        <!-- Ikon default diubah menjadi Matahari (fa-sun) karena mode default adalah cerah -->
         <button id="theme-toggle" class="ios-btn-icon" title="Ganti Mode">
           <i class="fa-solid fa-sun"></i>
         </button>
       </div>
     </header>
 
-    <!-- Konten Tab HOME -->
     <main id="tab-home" class="tab-content active">
-      <!-- Profile Card iOS -->
       <section class="ios-card profile-card">
         <div class="avatar-wrapper">
            <img src="https://ui-avatars.com/api/?name=arvirmdn&background=8A5D3B&color=F4E5C3&size=128" alt="Profile" class="avatar">
@@ -49,11 +43,9 @@
         <p class="profile-bio">Digital Creator & Developer</p>
       </section>
 
-      <!-- Menu Shortcuts -->
       <section class="ios-section">
         <h2 class="section-label">Navigasi Utama</h2>
         
-        <!-- Menu Donate -->
         <a href="https://arvirmdn.github.io/donate/" target="_blank" class="ios-list-item">
           <div class="item-icon icon-amber"><i class="fa-solid fa-heart"></i></div>
           <div class="item-text">
@@ -63,7 +55,6 @@
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
 
-        <!-- Hubungi Saya (WhatsApp dengan pesan otomatis) -->
         <a href="https://wa.me/6283117949780?text=HALO%20MASEH%20!" target="_blank" class="ios-list-item">
           <div class="item-icon icon-pink"><i class="fa-brands fa-whatsapp"></i></div>
           <div class="item-text">
@@ -73,7 +64,6 @@
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
 
-        <!-- Join Group & Saluran -->
         <a href="https://t.me/username_group_kamu" target="_blank" class="ios-list-item">
           <div class="item-icon icon-blue"><i class="fa-solid fa-users"></i></div>
           <div class="item-text">
@@ -94,14 +84,12 @@
       </section>
     </main>
 
-    <!-- Konten Tab TOOLS -->
     <main id="tab-tools" class="tab-content">
       <section class="ios-section">
         <h2 class="section-label">Media Downloader</h2>
         
         <div class="ios-card downloader-card">
           
-          <!-- Pilihan Platform -->
           <div class="platform-selector">
             <button class="platform-btn active" data-platform="tiktok"><i class="fa-brands fa-tiktok"></i> TikTok</button>
             <button class="platform-btn" data-platform="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
@@ -111,8 +99,9 @@
 
           <div class="ios-input-group">
             <input type="url" id="media-url" placeholder="Tempel link video di sini..." autocomplete="off">
+            <!-- Tombol diganti menjadi 3 titik -->
             <button id="download-btn" class="ios-btn-primary">
-              <i class="fa-solid fa-arrow-down"></i>
+              <i class="fa-solid fa-ellipsis"></i>
             </button>
           </div>
 
@@ -121,7 +110,6 @@
       </section>
     </main>
 
-    <!-- Bottom Navigation Bar iOS -->
     <nav class="ios-tab-bar">
       <button class="tab-btn active" data-tab="tab-home">
         <i class="fa-solid fa-house"></i>
@@ -134,6 +122,6 @@
     </nav>
   </div>
 
-  <script src="script.js?v=5.0"></script>
+  <script src="script.js?v=6.0"></script>
 </body>
 </html>
