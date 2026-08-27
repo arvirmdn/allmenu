@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const themeToggle = document.getElementById('theme-toggle');
+  const shareBtn = document.getElementById('share-btn'); // Tombol Share Baru
   const musicBtn = document.getElementById('music-btn');
   const bgMusic = document.getElementById('bg-music');
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -10,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const platformBtns = document.querySelectorAll('.platform-btn');
 
   let isPlaying = false;
-  let currentPlatform = 'tiktok'; // Hanya TikTok yang aktif
+  let currentPlatform = 'tiktok';
 
   document.addEventListener('touchmove', (e) => {
     if (e.scale !== undefined && e.scale !== 1) {
@@ -23,6 +24,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', newTheme);
     themeToggle.querySelector('i').className = newTheme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  });
+
+  // ===== Fitur Share (No. 1) =====
+  shareBtn.addEventListener('click', async () => {
+    const shareData = {
+      title: 'arvirmdn - Vintage Hub',
+      text: 'Kunjungi website arvirmdn! Ada downloader TikTok dan berbagai fitur menarik.',
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Gagal membagikan:', err);
+      }
+    } else {
+      // Fallback: salin link ke clipboard
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Link berhasil disalin! Silakan tempel di aplikasi lain.');
+      } catch (err) {
+        alert('Gagal menyalin link. Silakan salin manual: ' + window.location.href);
+      }
+    }
   });
 
   tabBtns.forEach(btn => {
@@ -49,12 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
     isPlaying = !isPlaying;
   });
 
-  // Platform buttons (hanya TikTok yang berfungsi)
   platformBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      // Jika tombol disabled, jangan lakukan apa-apa
       if (btn.disabled) return;
-
       platformBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentPlatform = btn.getAttribute('data-platform');
@@ -69,12 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(apis[i]);
         if (!res.ok) throw new Error('HTTP Error: ' + res.status);
         const data = await res.json();
-        
         const isSuccess = data.code === 0 || data.code === 200 || data.success === true || data.status === 'success';
-        
-        if (isSuccess) {
-          return data; 
-        }
+        if (isSuccess) return data;
         throw new Error('API tidak valid');
       } catch (err) {
         console.warn(`API ke-${i + 1} gagal, mencoba berikutnya...`);
@@ -90,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Cegah jika platform selain TikTok dipilih (walaupun tombolnya dikunci)
     if (currentPlatform !== 'tiktok') {
       resultBox.style.display = 'block';
       resultBox.innerHTML = '<span style="color:#ff3b30;">⚠️ Fitur YouTube, Instagram, dan Facebook sedang dalam perbaikan. Gunakan TikTok untuk saat ini.</span>';
@@ -101,8 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
     resultBox.innerHTML = '<div style="text-align:center; color:var(--text-sub);"><i class="fa-solid fa-spinner fa-spin"></i> Memproses video...</div>';
 
     const encodedUrl = encodeURIComponent(url);
-
-    // Hanya TikTok yang punya API list
     let apis = [
       `https://www.tikwm.com/api/?url=${encodedUrl}`,
       `https://tikwm.com/api/?url=${encodedUrl}`,
@@ -111,10 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const data = await tryAPIs(apis);
-
       let videoUrl = data.data?.wmplay || data.data?.hdplay || data.data?.play || 
                      data.data?.url || data.url || data.link || data.data?.video || "";
-      
       let audioUrl = data.data?.music || data.data?.audio || data.audio || data.mp3 || "";
 
       if (typeof videoUrl === 'string' && videoUrl.includes('<')) {

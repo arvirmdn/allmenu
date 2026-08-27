@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=7.0">
+  <link rel="stylesheet" href="style.css?v=8.0">
 </head>
 <body>
 
@@ -22,6 +22,11 @@
         <i class="fa-solid fa-circle-check verified-badge" title="Verified"></i>
       </div>
       <div class="header-actions">
+        <!-- Tombol Share (Baru) -->
+        <button id="share-btn" class="ios-btn-icon" title="Bagikan Web">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+        <!-- Tombol Theme -->
         <button id="theme-toggle" class="ios-btn-icon" title="Ganti Mode">
           <i class="fa-solid fa-sun"></i>
         </button>
@@ -81,6 +86,16 @@
           </div>
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
+
+        <!-- Kotak Saran (Baru) -->
+        <a href="https://wa.me/6283117949780?text=Halo%20Min%2C%20saya%20ingin%20memberi%20saran%20untuk%20web%20ini%3A%20" target="_blank" class="ios-list-item">
+          <div class="item-icon icon-red"><i class="fa-solid fa-comment-dots"></i></div>
+          <div class="item-text">
+            <span class="item-title">Kotak Saran</span>
+            <span class="item-sub">Kirim masukan atau ide fitur</span>
+          </div>
+          <i class="fa-solid fa-chevron-right item-arrow"></i>
+        </a>
       </section>
     </main>
 
@@ -93,7 +108,6 @@
           <div class="platform-selector">
             <button class="platform-btn active" data-platform="tiktok"><i class="fa-brands fa-tiktok"></i> TikTok</button>
             
-            <!-- TOMBOL DIKUNCI -->
             <button class="platform-btn platform-disabled" data-platform="youtube" disabled><i class="fa-brands fa-youtube"></i> YouTube</button>
             <button class="platform-btn platform-disabled" data-platform="instagram" disabled><i class="fa-brands fa-instagram"></i> Insta</button>
             <button class="platform-btn platform-disabled" data-platform="facebook" disabled><i class="fa-brands fa-facebook"></i> FB</button>
@@ -123,6 +137,6 @@
     </nav>
   </div>
 
-  <script src="script.js?v=7.0"></script>
+  <script src="script.js?v=8.0"></script>
 </body>
 </html>

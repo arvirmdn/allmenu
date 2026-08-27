@@ -423,14 +423,14 @@ body::before {
   background: transparent;
 }
 
-/* ===== GAYA UNTUK TOMBOL YANG DIKUNCI (BARU) ===== */
+/* ===== GAYA UNTUK TOMBOL YANG DIKUNCI ===== */
 .platform-disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: var(--border-color) !important;
   color: var(--text-sub) !important;
   border-color: var(--border-color) !important;
-  pointer-events: none; /* Mencegah klik sama sekali */
+  pointer-events: none;
 }
 
 .platform-disabled i {
