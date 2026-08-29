@@ -152,92 +152,74 @@ document.addEventListener('DOMContentLoaded', () => {
       resultBox.style.display = 'block';
       resultBox.innerHTML = '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</div>';
 
-      const encodedUrl = encodeURIComponent(url);
+      // API yt-dlp kamu sendiri di Railway
+      const YTDLP_API_URL = 'https://web-production-c517e.up.railway.app';
 
-      const apis = [
-        {
-          name: 'Cobalt',
-          url: 'https://api-production-7adf2.up.railway.app/',
-          method: 'POST',
-          body: JSON.stringify({ url, downloadMode: 'auto', videoQuality: selectedQuality }),
-          headers: { 'Content-Type': 'application/json' }
-        },
-        {
-          name: 'YouTube-DL',
-          url: `https://api.vevioz.com/api/button/youtube?url=${encodedUrl}`,
-          method: 'GET'
-        },
-        {
-          name: 'SaveFrom',
-          url: `https://www.savefrom.net/api/parse?url=${encodedUrl}`,
-          method: 'GET'
-        },
-        {
-          name: 'TikWM',
-          url: `https://www.tikwm.com/api/?url=${encodedUrl}`,
-          method: 'GET'
-        },
-        {
-          name: 'TikWM Mirror',
-          url: `https://tikwm.com/api/?url=${encodedUrl}`,
-          method: 'GET'
+      async function callYtdlpApi() {
+        const endpoint = `${YTDLP_API_URL}/download?url=${encodeURIComponent(url)}&quality=${selectedQuality}`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        if (!res.ok || data.status === 'error') {
+          throw new Error(data.message || `HTTP ${res.status}`);
         }
-      ];
+        return data;
+      }
 
-      let success = false;
+      // Fallback ringan khusus TikTok (tidak butuh server sendiri, dipakai kalau instance Railway sedang tidur/down)
+      async function callTikwmFallback() {
+        if (platform !== 'tiktok') throw new Error('no_fallback_for_platform');
+        const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+        const json = await res.json();
+        const videoUrl = json.data?.play || json.data?.wmplay;
+        if (!videoUrl) throw new Error('tikwm_no_result');
+        return {
+          status: 'success',
+          video_url: videoUrl,
+          title: json.data?.title || 'tiktok_video',
+          thumbnail: json.data?.cover,
+          _source: 'TikWM (fallback)'
+        };
+      }
 
-      for (const api of apis) {
+      let data;
+      let source = 'yt-dlp API';
+      try {
+        data = await callYtdlpApi();
+      } catch (err) {
+        console.warn('yt-dlp API gagal, coba fallback:', err.message);
         try {
-          let response;
-          if (api.method === 'POST') {
-            response = await fetch(api.url, { method: 'POST', headers: api.headers, body: api.body });
-          } else {
-            response = await fetch(api.url);
-          }
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-          const data = await response.json();
-
-          let videoUrl = data.url || data.data?.url || data.data?.play || data.data?.wmplay || data.download?.url || '';
-          let audioUrl = data.audio || data.data?.music || '';
-          let cover = data.thumbnail || data.cover || data.data?.cover || '';
-          let title = data.filename || data.title || data.data?.title || 'Video';
-
-          if (videoUrl) {
-            success = true;
-            saveHistory({ title, platform, url });
-
-            let htmlButtons = `<div style="display:flex; gap:8px; flex-wrap:wrap;">`;
-            htmlButtons += `<a href="${videoUrl}" target="_blank" download class="download-option-btn" style="background:var(--ios-blue); flex:1; text-align:center; padding:10px; border-radius:8px; text-decoration:none; color:#fff; font-weight:700;">⬇️ Video (${selectedQuality}p)</a>`;
-            if (audioUrl) {
-              htmlButtons += `<a href="${audioUrl}" target="_blank" download class="download-option-btn" style="background:var(--accent-green); flex:1; text-align:center; padding:10px; border-radius:8px; text-decoration:none; color:#fff; font-weight:700;">🎵 Audio</a>`;
-            }
-            htmlButtons += `</div>`;
-
-            resultBox.innerHTML = `
-              <div style="display:flex; flex-direction:column; gap:10px;">
-                <div style="display:flex; gap:10px; align-items:center;">
-                  ${cover ? `<img src="${cover}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;" onerror="this.style.display='none'">` : ''}
-                  <div style="overflow:hidden; flex:1;">
-                    <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</p>
-                    <p style="font-size:11px; color:var(--text-sub);">${platform.toUpperCase()} • ${selectedQuality}p • via ${api.name}</p>
-                  </div>
-                  <button onclick="navigator.clipboard.writeText('${videoUrl}')" style="background:var(--input-bg); border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:12px;">📋 Salin</button>
-                </div>
-                ${htmlButtons}
-              </div>
-            `;
-            renderHistory();
-            break;
-          }
-        } catch (err) {
-          console.warn(`API ${api.name} gagal:`, err.message);
+          data = await callTikwmFallback();
+          source = data._source;
+        } catch (fallbackErr) {
+          resultBox.innerHTML = `<span style="color:#ff3b30;">❌ Gagal memproses link. (${err.message})</span>`;
+          return;
         }
       }
 
-      if (!success) {
-        resultBox.innerHTML = '<span style="color:#ff3b30;">❌ Gagal! Coba link lain.</span>';
+      const videoUrl = data.video_url;
+      const title = data.title || 'Video';
+
+      if (!videoUrl) {
+        resultBox.innerHTML = '<span style="color:#ff3b30;">❌ Gagal! Coba link lain atau kualitas lain.</span>';
+        return;
       }
+
+      saveHistory({ title, platform, url });
+
+      resultBox.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; gap:10px; align-items:center;">
+            ${data.thumbnail ? `<img src="${data.thumbnail}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;" onerror="this.style.display='none'">` : ''}
+            <div style="overflow:hidden; flex:1;">
+              <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</p>
+              <p style="font-size:11px; color:var(--text-sub);">${platform.toUpperCase()} • ${selectedQuality}p • via ${source}</p>
+            </div>
+            <button onclick="navigator.clipboard.writeText('${videoUrl}')" style="background:var(--input-bg); border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:12px;">📋 Salin</button>
+          </div>
+          <a href="${videoUrl}" target="_blank" download class="download-option-btn" style="background:var(--ios-blue);">⬇️ Download</a>
+        </div>
+      `;
+      renderHistory();
     });
   }
 
