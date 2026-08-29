@@ -163,6 +163,16 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' }
         },
         {
+          name: 'YouTube-DL',
+          url: `https://api.vevioz.com/api/button/youtube?url=${encodedUrl}`,
+          method: 'GET'
+        },
+        {
+          name: 'SaveFrom',
+          url: `https://www.savefrom.net/api/parse?url=${encodedUrl}`,
+          method: 'GET'
+        },
+        {
           name: 'TikWM',
           url: `https://www.tikwm.com/api/?url=${encodedUrl}`,
           method: 'GET'
@@ -188,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const data = await response.json();
 
-          let videoUrl = data.url || data.data?.url || data.data?.play || data.data?.wmplay || '';
+          let videoUrl = data.url || data.data?.url || data.data?.play || data.data?.wmplay || data.download?.url || '';
           let audioUrl = data.audio || data.data?.music || '';
           let cover = data.thumbnail || data.cover || data.data?.cover || '';
           let title = data.filename || data.title || data.data?.title || 'Video';
