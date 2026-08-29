@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
       resultBox.innerHTML = '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</div>';
 
       // API yt-dlp kamu sendiri di Railway
-      const YTDLP_API_URL = 'https://web-production-c517e.up.railway.app';
+      const YTDLP_API_URL = 'https://web-production-0c5698.up.railway.app';
 
       async function callYtdlpApi() {
         const endpoint = `${YTDLP_API_URL}/download?url=${encodeURIComponent(url)}&quality=${selectedQuality}`;
