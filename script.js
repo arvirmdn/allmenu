@@ -6,13 +6,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
   const downloadBtn = document.getElementById('download-btn');
+  const thumbBtn = document.getElementById('thumb-btn');
   const mediaUrlInput = document.getElementById('media-url');
   const resultBox = document.getElementById('result-box');
   const platformBtns = document.querySelectorAll('.platform-btn');
+  const qualityBtns = document.querySelectorAll('.quality-btn');
+  const historyList = document.getElementById('history-list');
+  const historyBox = document.getElementById('history-box');
 
   let isPlaying = false;
+  let selectedQuality = '720';
 
-  // ===== CEK PLATFORM =====
   function getPlatformFromUrl(url) {
     if (url.includes('tiktok.com')) return 'tiktok';
     if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
@@ -23,7 +27,35 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'unknown';
   }
 
-  // ===== THEME TOGGLE =====
+  function loadHistory() {
+    try {
+      return JSON.parse(localStorage.getItem('downloadHistory') || '[]').slice(-10).reverse();
+    } catch { return []; }
+  }
+
+  function saveHistory(item) {
+    try {
+      const history = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
+      history.push({ ...item, time: new Date().toISOString() });
+      localStorage.setItem('downloadHistory', JSON.stringify(history.slice(-20)));
+    } catch {}
+  }
+
+  function renderHistory() {
+    const history = loadHistory();
+    if (history.length === 0) {
+      historyBox.style.display = 'none';
+      return;
+    }
+    historyBox.style.display = 'block';
+    historyList.innerHTML = history.map((item) => `
+      <div style="display:flex; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px solid var(--border-color);">
+        <span style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title || 'Video'}</span>
+        <span style="color:var(--text-sub);">${item.platform || 'Unknown'}</span>
+      </div>
+    `).join('');
+  }
+
   if (themeToggle) {
     themeToggle.addEventListener('click', () => {
       const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -33,33 +65,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ===== SHARE =====
   if (shareBtn) {
     shareBtn.addEventListener('click', async () => {
       const shareData = {
         title: 'arvirmdn - Vintage Hub',
-        text: 'Kunjungi website arvirmdn! Ada downloader TikTok dan berbagai fitur menarik.',
+        text: 'Download video dari TikTok, YouTube, Instagram, dan lainnya!',
         url: window.location.href
       };
-
       if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) {
-          console.log('Gagal membagikan:', err);
-        }
+        try { await navigator.share(shareData); } catch {}
       } else {
         try {
           await navigator.clipboard.writeText(window.location.href);
           alert('Link berhasil disalin!');
-        } catch (err) {
-          alert('Gagal menyalin link. Silakan salin manual: ' + window.location.href);
-        }
+        } catch {}
       }
     });
   }
 
-  // ===== TAB NAVIGATION =====
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       tabBtns.forEach(b => b.classList.remove('active'));
@@ -71,24 +94,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ===== MUSIC =====
   if (musicBtn) {
     musicBtn.addEventListener('click', () => {
       if (isPlaying) {
         bgMusic.pause();
         musicBtn.classList.remove('playing');
       } else {
-        bgMusic.play().then(() => {
-          musicBtn.classList.add('playing');
-        }).catch(() => {
-          alert("Sediakan file 'music.mp3' di repository atau ketuk layar terlebih dahulu.");
-        });
+        bgMusic.play().then(() => musicBtn.classList.add('playing')).catch(() => alert('Sediakan music.mp3'));
       }
       isPlaying = !isPlaying;
     });
   }
 
-  // ===== PLATFORM SELECTOR =====
   platformBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
@@ -99,7 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ===== DETECT PLATFORM FROM INPUT =====
+  qualityBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      qualityBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedQuality = btn.getAttribute('data-quality');
+    });
+  });
+
   if (mediaUrlInput) {
     mediaUrlInput.addEventListener('input', () => {
       const url = mediaUrlInput.value.trim();
@@ -107,42 +131,35 @@ document.addEventListener('DOMContentLoaded', () => {
       if (platform !== 'unknown') {
         platformBtns.forEach(btn => {
           btn.classList.remove('active');
-          if (btn.getAttribute('data-platform') === platform) {
-            btn.classList.add('active');
-          }
+          if (btn.getAttribute('data-platform') === platform) btn.classList.add('active');
         });
       }
     });
   }
 
-  // ===== DOWNLOAD =====
   if (downloadBtn) {
     downloadBtn.addEventListener('click', async () => {
       const url = mediaUrlInput.value.trim();
-      if (!url) {
-        alert("Masukkan tautan video terlebih dahulu!");
-        return;
-      }
+      if (!url) { alert('Masukkan link dulu!'); return; }
 
       const platform = getPlatformFromUrl(url);
       if (platform === 'unknown') {
         resultBox.style.display = 'block';
-        resultBox.innerHTML = '⚠️ Link tidak dikenali. Pastikan dari TikTok, YouTube, Instagram, Facebook, Twitter, atau Vimeo.';
+        resultBox.innerHTML = '⚠️ Link tidak dikenali. Pastikan dari TikTok, YouTube, Instagram, FB, Twitter, atau Vimeo.';
         return;
       }
 
       resultBox.style.display = 'block';
-      resultBox.innerHTML = '<div style="text-align:center; color:var(--text-sub);"><i class="fa-solid fa-spinner fa-spin"></i> Memproses video...</div>';
+      resultBox.innerHTML = '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</div>';
 
       const encodedUrl = encodeURIComponent(url);
 
-      // API list: Cobalt dulu, fallback ke TikWM
       const apis = [
         {
           name: 'Cobalt',
           url: 'https://api-production-7adf2.up.railway.app/',
           method: 'POST',
-          body: JSON.stringify({ url, downloadMode: 'auto', videoQuality: '720' }),
+          body: JSON.stringify({ url, downloadMode: 'auto', videoQuality: selectedQuality }),
           headers: { 'Content-Type': 'application/json' }
         },
         {
@@ -163,15 +180,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           let response;
           if (api.method === 'POST') {
-            response = await fetch(api.url, {
-              method: 'POST',
-              headers: api.headers,
-              body: api.body
-            });
+            response = await fetch(api.url, { method: 'POST', headers: api.headers, body: api.body });
           } else {
             response = await fetch(api.url);
           }
-
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
           const data = await response.json();
@@ -183,10 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (videoUrl) {
             success = true;
+            saveHistory({ title, platform, url });
+
             let htmlButtons = `<div style="display:flex; gap:8px; flex-wrap:wrap;">`;
-            htmlButtons += `<a href="${videoUrl}" target="_blank" download class="download-option-btn" style="background:var(--ios-blue); flex:1; text-align:center; padding:10px; border-radius:8px; text-decoration:none; color:#fff; font-weight:700;">⬇️ Unduh Video</a>`;
+            htmlButtons += `<a href="${videoUrl}" target="_blank" download class="download-option-btn" style="background:var(--ios-blue); flex:1; text-align:center; padding:10px; border-radius:8px; text-decoration:none; color:#fff; font-weight:700;">⬇️ Video (${selectedQuality}p)</a>`;
             if (audioUrl) {
-              htmlButtons += `<a href="${audioUrl}" target="_blank" download class="download-option-btn" style="background:var(--accent-green); flex:1; text-align:center; padding:10px; border-radius:8px; text-decoration:none; color:#fff; font-weight:700;">🎵 Unduh Audio</a>`;
+              htmlButtons += `<a href="${audioUrl}" target="_blank" download class="download-option-btn" style="background:var(--accent-green); flex:1; text-align:center; padding:10px; border-radius:8px; text-decoration:none; color:#fff; font-weight:700;">🎵 Audio</a>`;
             }
             htmlButtons += `</div>`;
 
@@ -194,14 +208,16 @@ document.addEventListener('DOMContentLoaded', () => {
               <div style="display:flex; flex-direction:column; gap:10px;">
                 <div style="display:flex; gap:10px; align-items:center;">
                   ${cover ? `<img src="${cover}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;" onerror="this.style.display='none'">` : ''}
-                  <div style="overflow:hidden;">
+                  <div style="overflow:hidden; flex:1;">
                     <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</p>
-                    <p style="font-size:11px; color:var(--text-sub);">via ${api.name}</p>
+                    <p style="font-size:11px; color:var(--text-sub);">${platform.toUpperCase()} • ${selectedQuality}p • via ${api.name}</p>
                   </div>
+                  <button onclick="navigator.clipboard.writeText('${videoUrl}')" style="background:var(--input-bg); border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:12px;">📋 Salin</button>
                 </div>
                 ${htmlButtons}
               </div>
             `;
+            renderHistory();
             break;
           }
         } catch (err) {
@@ -210,8 +226,31 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (!success) {
-        resultBox.innerHTML = '<span style="color:#ff3b30;">❌ Gagal! Coba link lain atau cek koneksi.</span>';
+        resultBox.innerHTML = '<span style="color:#ff3b30;">❌ Gagal! Coba link lain.</span>';
       }
     });
   }
+
+  if (thumbBtn) {
+    thumbBtn.addEventListener('click', async () => {
+      const url = mediaUrlInput.value.trim();
+      if (!url) { alert('Masukkan link dulu!'); return; }
+
+      const encodedUrl = encodeURIComponent(url);
+      try {
+        const res = await fetch(`https://www.tikwm.com/api/?url=${encodedUrl}`);
+        const data = await res.json();
+        const cover = data.data?.cover || '';
+        if (cover) {
+          window.open(cover, '_blank');
+        } else {
+          alert('Gagal mendapatkan thumbnail.');
+        }
+      } catch {
+        alert('Gagal mendapatkan thumbnail.');
+      }
+    });
+  }
+
+  renderHistory();
 });

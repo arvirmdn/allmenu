@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=8.0">
+  <link rel="stylesheet" href="style.css?v=9.0">
 </head>
 <body>
 
@@ -22,11 +22,9 @@
         <i class="fa-solid fa-circle-check verified-badge" title="Verified"></i>
       </div>
       <div class="header-actions">
-        <!-- Tombol Share (Baru) -->
         <button id="share-btn" class="ios-btn-icon" title="Bagikan Web">
           <i class="fa-solid fa-share-nodes"></i>
         </button>
-        <!-- Tombol Theme -->
         <button id="theme-toggle" class="ios-btn-icon" title="Ganti Mode">
           <i class="fa-solid fa-sun"></i>
         </button>
@@ -87,7 +85,6 @@
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
 
-        <!-- Kotak Saran (Baru) -->
         <a href="https://wa.me/6283117949780?text=Halo%20Min%2C%20saya%20ingin%20memberi%20saran%20untuk%20web%20ini%3A%20" target="_blank" class="ios-list-item">
           <div class="item-icon icon-red"><i class="fa-solid fa-comment-dots"></i></div>
           <div class="item-text">
@@ -107,20 +104,41 @@
           
           <div class="platform-selector">
             <button class="platform-btn active" data-platform="tiktok"><i class="fa-brands fa-tiktok"></i> TikTok</button>
-            
-            <button class="platform-btn platform-disabled" data-platform="youtube" disabled><i class="fa-brands fa-youtube"></i> YouTube</button>
-            <button class="platform-btn platform-disabled" data-platform="instagram" disabled><i class="fa-brands fa-instagram"></i> Insta</button>
-            <button class="platform-btn platform-disabled" data-platform="facebook" disabled><i class="fa-brands fa-facebook"></i> FB</button>
+            <button class="platform-btn" data-platform="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
+            <button class="platform-btn" data-platform="instagram"><i class="fa-brands fa-instagram"></i> Insta</button>
+            <button class="platform-btn" data-platform="facebook"><i class="fa-brands fa-facebook"></i> FB</button>
           </div>
 
           <div class="ios-input-group">
-            <input type="url" id="media-url" placeholder="Tempel link TikTok di sini..." autocomplete="off">
+            <input type="url" id="media-url" placeholder="Tempel link video di sini..." autocomplete="off">
             <button id="download-btn" class="ios-btn-primary">
-              <i class="fa-solid fa-ellipsis"></i>
+              <i class="fa-solid fa-arrow-down"></i>
             </button>
           </div>
 
+          <!-- Kualitas Video -->
+          <div class="quality-selector" style="margin-top:12px;">
+            <label style="font-size:12px; color:var(--text-sub); margin-bottom:4px; display:block;">Kualitas Video</label>
+            <div style="display:flex; gap:8px;">
+              <button class="quality-btn" data-quality="360">360p</button>
+              <button class="quality-btn active" data-quality="720">720p</button>
+              <button class="quality-btn" data-quality="1080">1080p</button>
+            </div>
+          </div>
+
+          <!-- Tombol Download Thumbnail -->
+          <button id="thumb-btn" class="ios-btn-secondary" style="margin-top:8px; width:100%; padding:10px; border:none; border-radius:4px; cursor:pointer;">
+            🖼️ Download Thumbnail
+          </button>
+
           <div id="result-box" class="result-box" style="display: none;"></div>
+
+          <!-- History -->
+          <div id="history-box" style="margin-top:16px; max-height:150px; overflow-y:auto; border-radius:4px; padding:10px; display:none;">
+            <p style="font-size:12px; font-weight:600; margin-bottom:6px;">📜 History Download</p>
+            <div id="history-list"></div>
+          </div>
+
         </div>
       </section>
     </main>
@@ -137,6 +155,6 @@
     </nav>
   </div>
 
-  <script src="script.js?v=8.0"></script>
+  <script src="script.js?v=9.0"></script>
 </body>
 </html>

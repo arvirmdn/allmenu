@@ -316,6 +316,35 @@ body::before {
   border-color: var(--ios-blue);
 }
 
+.quality-btn {
+  flex: 1;
+  background: var(--input-bg);
+  color: var(--text-sub);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px 0;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.quality-btn.active {
+  background: var(--ios-blue);
+  color: #fff;
+  border-color: var(--ios-blue);
+}
+
+.ios-btn-secondary {
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .card-title-row {
   display: flex;
   align-items: center;
@@ -362,7 +391,6 @@ body::before {
   -webkit-user-select: text;
 }
 
-/* Tombol untuk Pilihan MP4 / MP3 */
 .download-option-btn {
   flex: 1;
   text-align: center;
@@ -423,16 +451,10 @@ body::before {
   background: transparent;
 }
 
-/* ===== GAYA UNTUK TOMBOL YANG DIKUNCI ===== */
-.platform-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: var(--border-color) !important;
-  color: var(--text-sub) !important;
-  border-color: var(--border-color) !important;
-  pointer-events: none;
+#history-box {
+  background: var(--input-bg);
 }
 
-.platform-disabled i {
-  opacity: 0.6;
+#history-list div:last-child {
+  border-bottom: none !important;
 }
