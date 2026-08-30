@@ -1,4 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // ---------- Sound Effect Function ----------
+  // Generate beep sound menggunakan Web Audio API
+  function playSound(frequency = 800, duration = 80) {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = frequency; // Hz
+      oscillator.type = 'sine';
+      
+      // Fade in & out untuk smooth sound
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration / 1000);
+    } catch (e) {
+      // Silent fail jika Audio API tidak tersedia
+    }
+  }
+  
   const themeToggle = document.getElementById('theme-toggle');
   const shareBtn = document.getElementById('share-btn');
   const musicBtn = document.getElementById('music-btn');
@@ -1020,6 +1045,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // ---------- Universal Button Sound Effect ----------
+  // Trigger suara untuk semua buttons (kecuali yang memiliki atribut data-no-sound)
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (btn && !btn.hasAttribute('data-no-sound')) {
+      playSound(800, 80); // 800 Hz, 80ms
+    }
+  }, true); // Capture phase untuk catch semua clicks
 
   renderHistory();
 });
