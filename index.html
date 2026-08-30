@@ -21,8 +21,13 @@
   <meta name="twitter:description" content="Download video & audio TikTok, YouTube, Instagram, Facebook, X, dan Spotify secara gratis.">
   <meta name="twitter:image" content="https://ui-avatars.com/api/?name=arvirmdn&background=8A5D3B&color=F4E5C3&size=256">
 
-  <!-- Favicon (SVG, tema panah download vintage) -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%238A5D3B'/%3E%3Ctext x='50' y='68' font-size='55' font-family='Georgia,serif' font-weight='bold' fill='%23F4E5C3' text-anchor='middle'%3Ea%3C/text%3E%3C/svg%3E">
+  <!-- Favicon & PWA icons (avatar bot arvirmdnBot) -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="arvirmdn">
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
@@ -185,6 +190,11 @@
             🖼️ Download Thumbnail
           </button>
 
+          <!-- Muncul otomatis via script.js kalau link yang diproses > 1 dan minimal 1 berhasil -->
+          <button id="download-zip-btn" class="ios-btn-secondary" style="display:none; margin-top:8px; width:100%; padding:10px; border:none; border-radius:4px; cursor:pointer;">
+            🗜️ Download Semua (ZIP)
+          </button>
+
           <div id="result-box" class="result-box" style="display: none;"></div>
 
           <!-- History -->
@@ -213,5 +223,14 @@
   </div>
 
   <script src="script.js?v=13.0"></script>
+  <script>
+    // Registrasi Service Worker (PWA) — biar web bisa di-install & load lebih cepat.
+    // Dibiarkan silent-fail (misal saat dibuka dari file:// lokal tanpa HTTPS).
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

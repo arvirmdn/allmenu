@@ -19,9 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalBody = document.getElementById('modal-body');
   const modalCloseBtn = document.getElementById('modal-close');
   const modalTriggers = document.querySelectorAll('[data-modal]');
+  const zipBtn = document.getElementById('download-zip-btn');
 
   let isPlaying = false;
   let selectedQuality = '720';
+  let lastBatch = []; // [{url, quality}] dari proses terakhir, dipakai tombol ZIP
 
   // Escape teks yang berasal dari luar (judul video, dsb.) sebelum dimasukkan
   // ke innerHTML, biar tidak bisa disusupi HTML/script (XSS) dari API pihak ketiga.
@@ -103,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <ul>
           <li>Video/audio di atas 15 menit akan ditolak server.</li>
           <li>Gunakan tombol 🖼️ Download Thumbnail untuk mengunduh cover video saja.</li>
+          <li>Kalau kamu proses lebih dari 1 link sekaligus, tombol 🗜️ <b>Download Semua (ZIP)</b> akan muncul untuk mengunduh semuanya dalam satu file .zip.</li>
         </ul>
       `
     },
@@ -372,6 +375,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses ${urls.length} link satu-satu...</div>`
         : '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</div>';
 
+      lastBatch = [];
+      if (zipBtn) zipBtn.style.display = 'none';
+
       try {
         const cards = [];
         for (const url of urls) {
@@ -380,11 +386,50 @@ document.addEventListener('DOMContentLoaded', () => {
           const card = await processOneLink(url, quality);
           cards.push(card);
           resultBox.innerHTML = cards.join('');
+          lastBatch.push({ url, quality });
         }
         renderHistory();
+        // Tombol ZIP cuma berguna kalau link-nya lebih dari satu
+        if (zipBtn && lastBatch.length > 1) {
+          zipBtn.style.display = 'block';
+        }
       } finally {
         setBtnLoading(downloadBtn, false, '', downloadBtnDefaultHtml);
         if (thumbBtn) thumbBtn.disabled = false;
+      }
+    });
+  }
+
+  if (zipBtn) {
+    const zipBtnDefaultHtml = zipBtn.innerHTML;
+    zipBtn.addEventListener('click', async () => {
+      if (!lastBatch.length) return;
+
+      setBtnLoading(zipBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i> Membungkus ZIP...', zipBtnDefaultHtml);
+      try {
+        const res = await fetch(`${YTDLP_API_URL}/download-zip`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lastBatch),
+        });
+        if (!res.ok) {
+          let msg = `HTTP ${res.status}`;
+          try { msg = (await res.json()).detail || msg; } catch {}
+          throw new Error(msg);
+        }
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = 'downloads.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        alert(`Gagal membuat ZIP: ${err.message}`);
+      } finally {
+        setBtnLoading(zipBtn, false, '', zipBtnDefaultHtml);
       }
     });
   }
