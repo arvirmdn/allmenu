@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      const videoUrl = data.video_url;
+      const videoUrl = data.download_url || data.video_url;
       const title = data.title || 'Video';
 
       if (!videoUrl) {

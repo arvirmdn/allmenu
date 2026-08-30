@@ -128,6 +128,13 @@ body::before {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Home dikunci total: tidak boleh scroll/geser sama sekali, kontennya memang didesain pas 1 layar */
+#tab-home {
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
 .tab-content.active {
   display: flex;
 }
