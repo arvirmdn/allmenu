@@ -300,13 +300,13 @@ body::before {
 
 .platform-selector {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   margin-bottom: 14px;
   gap: 6px;
 }
 
 .platform-btn {
-  flex: 1;
+  flex: 1 1 calc(33.333% - 4px);
   background: var(--input-bg);
   color: var(--text-sub);
   border: 1px solid var(--border-color);
@@ -363,9 +363,11 @@ body::before {
 .ios-input-group {
   display: flex;
   gap: 8px;
+  align-items: flex-end;
 }
 
-.ios-input-group input {
+.ios-input-group input,
+.ios-input-group textarea {
   flex: 1;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
@@ -376,6 +378,10 @@ body::before {
   outline: none;
   user-select: text;
   -webkit-user-select: text;
+  font-family: inherit;
+  resize: none;
+  max-height: 110px;
+  line-height: 1.4;
 }
 
 .ios-btn-primary {

@@ -7,7 +7,7 @@
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=9.0">
+  <link rel="stylesheet" href="style.css?v=10.0">
 </head>
 <body>
 
@@ -107,10 +107,12 @@
             <button class="platform-btn" data-platform="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
             <button class="platform-btn" data-platform="instagram"><i class="fa-brands fa-instagram"></i> Insta</button>
             <button class="platform-btn" data-platform="facebook"><i class="fa-brands fa-facebook"></i> FB</button>
+            <button class="platform-btn" data-platform="twitter"><i class="fa-brands fa-x-twitter"></i> X</button>
+            <button class="platform-btn" data-platform="spotify"><i class="fa-brands fa-spotify"></i> Spotify</button>
           </div>
 
           <div class="ios-input-group">
-            <input type="url" id="media-url" placeholder="Tempel link video di sini..." autocomplete="off">
+            <textarea id="media-url" placeholder="Tempel link video di sini... (bisa beberapa link, satu per baris, maks 5)" autocomplete="off" rows="1"></textarea>
             <button id="download-btn" class="ios-btn-primary">
               <i class="fa-solid fa-arrow-down"></i>
             </button>
@@ -118,12 +120,14 @@
 
           <!-- Kualitas Video -->
           <div class="quality-selector" style="margin-top:12px;">
-            <label style="font-size:12px; color:var(--text-sub); margin-bottom:4px; display:block;">Kualitas Video</label>
-            <div style="display:flex; gap:8px;">
+            <label style="font-size:12px; color:var(--text-sub); margin-bottom:4px; display:block;">Kualitas / Format</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button class="quality-btn" data-quality="360">360p</button>
               <button class="quality-btn active" data-quality="720">720p</button>
               <button class="quality-btn" data-quality="1080">1080p</button>
+              <button class="quality-btn" data-quality="mp3">🎵 MP3</button>
             </div>
+            <p style="font-size:11px; color:var(--text-sub); margin-top:6px;">⚠️ Link Spotify otomatis diunduh sebagai audio MP3 (dicari versi audionya di YouTube). Video/audio di atas 15 menit akan ditolak server.</p>
           </div>
 
           <!-- Tombol Download Thumbnail -->
@@ -155,6 +159,6 @@
     </nav>
   </div>
 
-  <script src="script.js?v=9.0"></script>
+  <script src="script.js?v=10.0"></script>
 </body>
 </html>
