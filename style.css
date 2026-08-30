@@ -99,7 +99,28 @@ body::before {
 
 .verified-badge {
   color: var(--ios-blue);
-  font-size: 15px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  animation: verified-pulse 2.4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes verified-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(154, 96, 60, 0));
+  }
+  50% {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 5px rgba(154, 96, 60, 0.6));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verified-badge {
+    animation: none;
+  }
 }
 
 .ios-btn-icon {
@@ -335,12 +356,15 @@ body::before {
   display: flex;
   align-items: center;
   gap: 6px;
+  line-height: 1;
 }
 
 .profile-name {
   font-family: "Playfair Display", Georgia, serif;
   font-size: 24px;
   font-weight: 800;
+  line-height: 1;
+  margin: 0;
 }
 
 .profile-bio {
