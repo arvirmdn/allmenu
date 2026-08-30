@@ -13,9 +13,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const qualityBtns = document.querySelectorAll('.quality-btn');
   const historyList = document.getElementById('history-list');
   const historyBox = document.getElementById('history-box');
+  const clearHistoryBtn = document.getElementById('clear-history-btn');
+  const appModal = document.getElementById('app-modal');
+  const modalTitle = document.getElementById('modal-title');
+  const modalBody = document.getElementById('modal-body');
+  const modalCloseBtn = document.getElementById('modal-close');
+  const modalTriggers = document.querySelectorAll('[data-modal]');
 
   let isPlaying = false;
   let selectedQuality = '720';
+
+  // Escape teks yang berasal dari luar (judul video, dsb.) sebelum dimasukkan
+  // ke innerHTML, biar tidak bisa disusupi HTML/script (XSS) dari API pihak ketiga.
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
 
   function getPlatformFromUrl(url) {
     if (url.includes('tiktok.com')) return 'tiktok';
@@ -58,10 +72,78 @@ document.addEventListener('DOMContentLoaded', () => {
     historyBox.style.display = 'block';
     historyList.innerHTML = history.map((item) => `
       <div style="display:flex; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px solid var(--border-color);">
-        <span style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.title || 'Video'}</span>
-        <span style="color:var(--text-sub);">${item.platform || 'Unknown'}</span>
+        <span style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(item.title || 'Video')}</span>
+        <span style="color:var(--text-sub);">${escapeHtml(item.platform || 'Unknown')}</span>
       </div>
     `).join('');
+  }
+
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', () => {
+      if (!confirm('Hapus semua riwayat download?')) return;
+      try { localStorage.removeItem('downloadHistory'); } catch {}
+      renderHistory();
+    });
+  }
+
+  // ---------- Modal (Cara Pakai / Kebijakan Privasi) ----------
+  const MODAL_CONTENT = {
+    'cara-pakai': {
+      title: 'Cara Pakai',
+      body: `
+        <h4>1. Pilih Platform</h4>
+        <p>Buka tab <b>Tools</b>, lalu pilih platform (TikTok, YouTube, Instagram, Facebook, X, atau Spotify) — atau langsung tempel link-nya, platform akan terdeteksi otomatis.</p>
+        <h4>2. Tempel Link</h4>
+        <p>Tempel link video di kotak teks. Bisa beberapa link sekaligus, satu link per baris (maksimal 5 link).</p>
+        <h4>3. Pilih Kualitas</h4>
+        <p>Pilih 360p / 720p / 1080p untuk video, atau 🎵 MP3 untuk audio saja. Link Spotify otomatis diunduh sebagai MP3.</p>
+        <h4>4. Download</h4>
+        <p>Tekan tombol panah untuk memproses. Setelah selesai, tekan tombol <b>Download</b> atau <b>Salin</b> link pada hasil.</p>
+        <h4>Catatan</h4>
+        <ul>
+          <li>Video/audio di atas 15 menit akan ditolak server.</li>
+          <li>Gunakan tombol 🖼️ Download Thumbnail untuk mengunduh cover video saja.</li>
+        </ul>
+      `
+    },
+    'privasi': {
+      title: 'Kebijakan Privasi',
+      body: `
+        <h4>Penggunaan Data</h4>
+        <p>Link yang kamu masukkan diproses langsung ke server untuk diambil media-nya dan tidak disimpan permanen di server kami.</p>
+        <h4>Riwayat Download</h4>
+        <p>Riwayat download disimpan <b>hanya di perangkatmu sendiri</b> (localStorage browser), bukan di server. Kamu bisa menghapusnya kapan saja lewat tombol "Hapus" di bagian History.</p>
+        <h4>Hak Cipta</h4>
+        <p>Layanan ini disediakan untuk keperluan pribadi/backup. Kami tidak bertanggung jawab atas penyalahgunaan konten yang melanggar hak cipta pemilik asli. Unduh dan gunakan konten secara bertanggung jawab.</p>
+        <h4>Pihak Ketiga</h4>
+        <p>Untuk beberapa platform, proses ekstraksi media dapat memanfaatkan layanan pihak ketiga sebagai fallback (misalnya untuk TikTok). Kami tidak mengontrol kebijakan privasi layanan tersebut.</p>
+      `
+    }
+  };
+
+  function openModal(key) {
+    const content = MODAL_CONTENT[key];
+    if (!content || !appModal) return;
+    modalTitle.textContent = content.title;
+    modalBody.innerHTML = content.body;
+    appModal.classList.add('open');
+    appModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeModal() {
+    if (!appModal) return;
+    appModal.classList.remove('open');
+    appModal.setAttribute('aria-hidden', 'true');
+  }
+
+  modalTriggers.forEach(btn => {
+    btn.addEventListener('click', () => openModal(btn.getAttribute('data-modal')));
+  });
+  if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+  if (appModal) {
+    appModal.addEventListener('click', (e) => {
+      if (e.target === appModal) closeModal();
+    });
   }
 
   if (themeToggle) {
@@ -199,26 +281,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderResultCard(url, platform, quality, data, source, errorMsg) {
     if (errorMsg) {
-      return `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ ${platform.toUpperCase()}: ${errorMsg}</span></div>`;
+      return `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ ${escapeHtml(platform.toUpperCase())}: ${escapeHtml(errorMsg)}</span></div>`;
     }
     const fileUrl = data.download_url || data.video_url || data.audio_url;
     const title = data.title || (quality === 'mp3' ? 'Audio' : 'Video');
     if (!fileUrl) {
-      return `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ ${platform.toUpperCase()}: Gagal, coba link/kualitas lain.</span></div>`;
+      return `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ ${escapeHtml(platform.toUpperCase())}: Gagal, coba link/kualitas lain.</span></div>`;
     }
     saveHistory({ title, platform, url });
     const label = quality === 'mp3' ? '🎵 MP3' : `${quality}p`;
+    // fileUrl & thumbnail dipakai sebagai attribute URL (bukan teks bebas), tetap
+    // di-escape supaya tidak bisa memutus attribute HTML kalau berisi karakter aneh.
+    const safeFileUrl = escapeHtml(fileUrl);
+    const safeThumb = data.thumbnail ? escapeHtml(data.thumbnail) : '';
     return `
       <div style="display:flex; flex-direction:column; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-color);">
         <div style="display:flex; gap:10px; align-items:center;">
-          ${data.thumbnail ? `<img src="${data.thumbnail}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;" onerror="this.style.display='none'">` : ''}
+          ${safeThumb ? `<img src="${safeThumb}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;" onerror="this.style.display='none'">` : ''}
           <div style="overflow:hidden; flex:1;">
-            <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</p>
-            <p style="font-size:11px; color:var(--text-sub);">${platform.toUpperCase()} • ${label} • via ${source}</p>
+            <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(title)}</p>
+            <p style="font-size:11px; color:var(--text-sub);">${escapeHtml(platform.toUpperCase())} • ${escapeHtml(label)} • via ${escapeHtml(source)}</p>
           </div>
-          <button onclick="navigator.clipboard.writeText('${fileUrl}')" style="background:var(--input-bg); border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:12px;">📋 Salin</button>
+          <button type="button" class="copy-link-btn" data-url="${safeFileUrl}" style="background:var(--input-bg); border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:12px;">📋 Salin</button>
         </div>
-        <a href="${fileUrl}" target="_blank" download class="download-option-btn" style="background:var(--ios-blue);">⬇️ Download</a>
+        <a href="${safeFileUrl}" target="_blank" download class="download-option-btn" style="background:var(--ios-blue);">⬇️ Download</a>
       </div>
     `;
   }
@@ -249,7 +335,24 @@ document.addEventListener('DOMContentLoaded', () => {
     return renderResultCard(url, platform, quality, data, source, null);
   }
 
+  // Klik tombol "Salin" pada result card (event delegation, karena kartunya dibuat dinamis)
+  if (resultBox) {
+    resultBox.addEventListener('click', (e) => {
+      const btn = e.target.closest('.copy-link-btn');
+      if (!btn) return;
+      const url = btn.getAttribute('data-url');
+      if (url) navigator.clipboard.writeText(url).catch(() => {});
+    });
+  }
+
+  function setBtnLoading(btn, loading, loadingHtml, normalHtml) {
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.innerHTML = loading ? loadingHtml : normalHtml;
+  }
+
   if (downloadBtn) {
+    const downloadBtnDefaultHtml = downloadBtn.innerHTML;
     downloadBtn.addEventListener('click', async () => {
       const rawInput = mediaUrlInput.value.trim();
       if (!rawInput) { alert('Masukkan link dulu!'); return; }
@@ -261,27 +364,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      setBtnLoading(downloadBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i>', downloadBtnDefaultHtml);
+      if (thumbBtn) thumbBtn.disabled = true;
+
       resultBox.style.display = 'block';
       resultBox.innerHTML = urls.length > 1
         ? `<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses ${urls.length} link satu-satu...</div>`
         : '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</div>';
 
-      const cards = [];
-      for (const url of urls) {
-        const platform = getPlatformFromUrl(url);
-        const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
-        const card = await processOneLink(url, quality);
-        cards.push(card);
-        resultBox.innerHTML = cards.join('');
+      try {
+        const cards = [];
+        for (const url of urls) {
+          const platform = getPlatformFromUrl(url);
+          const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
+          const card = await processOneLink(url, quality);
+          cards.push(card);
+          resultBox.innerHTML = cards.join('');
+        }
+        renderHistory();
+      } finally {
+        setBtnLoading(downloadBtn, false, '', downloadBtnDefaultHtml);
+        if (thumbBtn) thumbBtn.disabled = false;
       }
-      renderHistory();
     });
   }
 
   if (thumbBtn) {
+    const thumbBtnDefaultHtml = thumbBtn.innerHTML;
     thumbBtn.addEventListener('click', async () => {
       const url = mediaUrlInput.value.trim();
       if (!url) { alert('Masukkan link dulu!'); return; }
+
+      setBtnLoading(thumbBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i> Mengambil...', thumbBtnDefaultHtml);
+      if (downloadBtn) downloadBtn.disabled = true;
 
       const encodedUrl = encodeURIComponent(url);
       try {
@@ -295,6 +410,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch {
         alert('Gagal mendapatkan thumbnail.');
+      } finally {
+        setBtnLoading(thumbBtn, false, '', thumbBtnDefaultHtml);
+        if (downloadBtn) downloadBtn.disabled = false;
       }
     });
   }

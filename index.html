@@ -4,10 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>arvirmdn - Vintage Hub</title>
-  
+
+  <!-- SEO / Meta -->
+  <meta name="description" content="Download video & audio TikTok, YouTube, Instagram, Facebook, X, dan Spotify secara gratis. Pilih kualitas 360p/720p/1080p atau ekstrak audio MP3.">
+  <meta name="theme-color" content="#e7d5b5">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="arvirmdn - Vintage Hub">
+  <meta property="og:description" content="Download video & audio TikTok, YouTube, Instagram, Facebook, X, dan Spotify secara gratis.">
+  <meta property="og:image" content="https://ui-avatars.com/api/?name=arvirmdn&background=8A5D3B&color=F4E5C3&size=256">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="arvirmdn - Vintage Hub">
+  <meta name="twitter:description" content="Download video & audio TikTok, YouTube, Instagram, Facebook, X, dan Spotify secara gratis.">
+  <meta name="twitter:image" content="https://ui-avatars.com/api/?name=arvirmdn&background=8A5D3B&color=F4E5C3&size=256">
+
+  <!-- Favicon (SVG, tema panah download vintage) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%238A5D3B'/%3E%3Ctext x='50' y='68' font-size='55' font-family='Georgia,serif' font-weight='bold' fill='%23F4E5C3' text-anchor='middle'%3Ea%3C/text%3E%3C/svg%3E">
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=12.0">
+  <link rel="stylesheet" href="style.css?v=13.0">
 </head>
 <body>
 
@@ -93,8 +112,39 @@
           </div>
           <i class="fa-solid fa-chevron-right item-arrow"></i>
         </a>
+
+        <button type="button" class="ios-list-item" data-modal="cara-pakai">
+          <div class="item-icon icon-blue"><i class="fa-solid fa-circle-question"></i></div>
+          <div class="item-text">
+            <span class="item-title">Cara Pakai</span>
+            <span class="item-sub">Panduan singkat download media</span>
+          </div>
+          <i class="fa-solid fa-chevron-right item-arrow"></i>
+        </button>
+
+        <button type="button" class="ios-list-item" data-modal="privasi">
+          <div class="item-icon icon-green"><i class="fa-solid fa-shield-halved"></i></div>
+          <div class="item-text">
+            <span class="item-title">Kebijakan Privasi</span>
+            <span class="item-sub">Disclaimer & penggunaan data</span>
+          </div>
+          <i class="fa-solid fa-chevron-right item-arrow"></i>
+        </button>
       </section>
     </main>
+
+    <!-- Modal generik (dipakai untuk Cara Pakai & Kebijakan Privasi) -->
+    <div id="app-modal" class="modal-overlay" aria-hidden="true">
+      <div class="modal-box" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h3 id="modal-title" class="modal-title"></h3>
+          <button type="button" id="modal-close" class="ios-btn-icon" aria-label="Tutup">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="modal-body" class="modal-body"></div>
+      </div>
+    </div>
 
     <main id="tab-tools" class="tab-content">
       <section class="ios-section">
@@ -139,7 +189,10 @@
 
           <!-- History -->
           <div id="history-box" style="margin-top:16px; max-height:150px; overflow-y:auto; border-radius:4px; padding:10px; display:none;">
-            <p style="font-size:12px; font-weight:600; margin-bottom:6px;">📜 History Download</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <p style="font-size:12px; font-weight:600;">📜 History Download</p>
+              <button type="button" id="clear-history-btn" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; text-decoration:underline;">Hapus</button>
+            </div>
             <div id="history-list"></div>
           </div>
 
@@ -159,6 +212,6 @@
     </nav>
   </div>
 
-  <script src="script.js?v=12.0"></script>
+  <script src="script.js?v=13.0"></script>
 </body>
 </html>
