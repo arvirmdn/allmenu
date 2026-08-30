@@ -118,6 +118,7 @@ body::before {
 
 .tab-content {
   flex: 1;
+  min-height: 0; /* wajib: tanpa ini flex item ikut membesar sesuai konten, bukan discroll */
   overflow-y: auto;
   touch-action: pan-y;
   padding: 10px 16px 80px 16px;
