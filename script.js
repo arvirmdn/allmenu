@@ -785,6 +785,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return renderResultCard(url, platform, quality, null, null, err.message);
     }
+    // Link pendek TikTok (vt.tiktok.com/xxx) baru ketahuan post foto/slide
+    // setelah di-resolve di server, jadi baru bisa dideteksi di sini (bukan
+    // dari pola URL /photo/ seperti isTikTokPhotoUrl di awal).
+    if (data && data.type === 'photo') {
+      return renderPhotoResultCard(url, data, source, null);
+    }
     return renderResultCard(url, platform, quality, data, source, null);
   }
 
