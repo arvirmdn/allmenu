@@ -3,6 +3,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const shareBtn = document.getElementById('share-btn');
   const musicBtn = document.getElementById('music-btn');
   const bgMusic = document.getElementById('bg-music');
+  const playlistModal = document.getElementById('playlist-modal');
+  const playlistCloseBtn = document.getElementById('playlist-close');
+  const playlistListEl = document.getElementById('playlist-list');
+  const nowPlayingBar = document.getElementById('playlist-now-playing');
+  const nowPlayingTitle = document.getElementById('now-playing-title');
+  const nowPlayingArtist = document.getElementById('now-playing-artist');
+  const nowPlayingToggleBtn = document.getElementById('now-playing-toggle');
+  const nowPlayingPrevBtn = document.getElementById('now-playing-prev');
+  const nowPlayingNextBtn = document.getElementById('now-playing-next');
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
   const downloadBtn = document.getElementById('download-btn');
@@ -21,6 +30,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalTriggers = document.querySelectorAll('[data-modal]');
   const zipBtn = document.getElementById('download-zip-btn');
 
+  // ---------- Playlist Musik ----------
+  // Tambahkan lagu di sini nanti, formatnya:
+  // { title: 'Judul Lagu', artist: 'Nama Artis', src: 'musik/nama-file.mp3' }
+  const playlist = [
+    // { title: 'Contoh Lagu', artist: 'Contoh Artis', src: 'musik/contoh.mp3' },
+  ];
+
+  let currentTrackIndex = -1;
   let isPlaying = false;
   let selectedQuality = '720';
   let lastBatch = []; // [{url, quality}] dari proses terakhir, dipakai tombol ZIP
@@ -209,17 +226,124 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  if (musicBtn) {
-    musicBtn.addEventListener('click', () => {
-      if (isPlaying) {
-        bgMusic.pause();
-        musicBtn.classList.remove('playing');
-      } else {
-        bgMusic.play().then(() => musicBtn.classList.add('playing')).catch(() => alert('Sediakan music.mp3'));
-      }
-      isPlaying = !isPlaying;
+  function renderPlaylist() {
+    if (!playlistListEl) return;
+    if (!playlist.length) {
+      playlistListEl.innerHTML = `
+        <div style="text-align:center; padding:28px 10px; color:var(--text-sub); font-size:13px;">
+          <i class="fa-solid fa-record-vinyl" style="font-size:26px; margin-bottom:10px; display:block; color:var(--ios-blue);"></i>
+          Belum ada musik di playlist.<br>Musik akan ditambahkan segera.
+        </div>
+      `;
+      return;
+    }
+    playlistListEl.innerHTML = playlist.map((track, i) => `
+      <button type="button" class="playlist-item${i === currentTrackIndex ? ' active' : ''}" data-index="${i}">
+        <div class="playlist-item-icon">
+          <i class="fa-solid ${i === currentTrackIndex && isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+        </div>
+        <div class="playlist-item-text">
+          <span class="playlist-item-title">${escapeHtml(track.title)}</span>
+          <span class="playlist-item-artist">${escapeHtml(track.artist || '')}</span>
+        </div>
+        ${i === currentTrackIndex && isPlaying ? '<i class="fa-solid fa-volume-high playlist-item-wave"></i>' : ''}
+      </button>
+    `).join('');
+
+    playlistListEl.querySelectorAll('.playlist-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-index'), 10);
+        if (idx === currentTrackIndex) {
+          togglePlayPause();
+        } else {
+          playTrack(idx);
+        }
+      });
     });
   }
+
+  function updateNowPlayingUI() {
+    const track = playlist[currentTrackIndex];
+    if (!track) {
+      nowPlayingBar.style.display = 'none';
+      return;
+    }
+    nowPlayingBar.style.display = 'flex';
+    nowPlayingTitle.textContent = track.title;
+    nowPlayingArtist.textContent = track.artist || '';
+    const icon = nowPlayingToggleBtn.querySelector('i');
+    icon.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+  }
+
+  function updateMusicBadge() {
+    if (!musicBtn) return;
+    musicBtn.classList.toggle('playing', isPlaying);
+  }
+
+  function playTrack(index) {
+    if (!playlist.length) return;
+    if (index < 0) index = playlist.length - 1;
+    if (index >= playlist.length) index = 0;
+    currentTrackIndex = index;
+    const track = playlist[currentTrackIndex];
+    bgMusic.src = track.src;
+    bgMusic.play().then(() => {
+      isPlaying = true;
+      renderPlaylist();
+      updateNowPlayingUI();
+      updateMusicBadge();
+    }).catch(() => {
+      alert('Gagal memutar lagu, cek kembali file musiknya.');
+    });
+  }
+
+  function togglePlayPause() {
+    if (currentTrackIndex === -1) {
+      if (playlist.length) playTrack(0);
+      return;
+    }
+    if (isPlaying) {
+      bgMusic.pause();
+      isPlaying = false;
+    } else {
+      bgMusic.play().catch(() => {});
+      isPlaying = true;
+    }
+    renderPlaylist();
+    updateNowPlayingUI();
+    updateMusicBadge();
+  }
+
+  bgMusic.addEventListener('ended', () => {
+    if (playlist.length) playTrack(currentTrackIndex + 1);
+  });
+
+  function openPlaylistModal() {
+    if (!playlistModal) return;
+    renderPlaylist();
+    updateNowPlayingUI();
+    playlistModal.classList.add('open');
+    playlistModal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closePlaylistModal() {
+    if (!playlistModal) return;
+    playlistModal.classList.remove('open');
+    playlistModal.setAttribute('aria-hidden', 'true');
+  }
+
+  if (musicBtn) {
+    musicBtn.addEventListener('click', openPlaylistModal);
+  }
+  if (playlistCloseBtn) playlistCloseBtn.addEventListener('click', closePlaylistModal);
+  if (playlistModal) {
+    playlistModal.addEventListener('click', (e) => {
+      if (e.target === playlistModal) closePlaylistModal();
+    });
+  }
+  if (nowPlayingToggleBtn) nowPlayingToggleBtn.addEventListener('click', togglePlayPause);
+  if (nowPlayingPrevBtn) nowPlayingPrevBtn.addEventListener('click', () => playTrack(currentTrackIndex - 1));
+  if (nowPlayingNextBtn) nowPlayingNextBtn.addEventListener('click', () => playTrack(currentTrackIndex + 1));
 
   platformBtns.forEach(btn => {
     btn.addEventListener('click', () => {

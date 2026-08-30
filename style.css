@@ -738,6 +738,127 @@ body::before {
   margin: 4px 0;
 }
 
+/* ---------- Playlist Musik ---------- */
+.playlist-modal-body {
+  padding: 10px 12px 14px 12px;
+}
+
+.playlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playlist-item {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  cursor: pointer;
+  color: var(--text-main);
+  text-align: left;
+}
+
+.playlist-item:active {
+  transform: scale(0.98);
+}
+
+.playlist-item.active {
+  border-color: var(--ios-blue);
+  background: var(--input-bg);
+}
+
+.playlist-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ios-blue);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.playlist-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.playlist-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-item-artist {
+  font-size: 11px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-item-wave {
+  color: var(--ios-blue);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.playlist-now-playing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.now-playing-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background: var(--ios-blue);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.now-playing-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.now-playing-title {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-playing-artist {
+  font-size: 10px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---------- Progress bar (dipakai saat unduh file beneran via /proxy) ---------- */
 .progress-bar-wrap {
   width: 100%;

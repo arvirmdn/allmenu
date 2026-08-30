@@ -35,9 +35,7 @@
 </head>
 <body>
 
-  <audio id="bg-music" loop>
-    <source src="music.mp3" type="audio/mpeg">
-  </audio>
+  <audio id="bg-music"></audio>
 
   <div class="ios-app">
     <header class="ios-header">
@@ -168,6 +166,37 @@
           </button>
         </div>
         <div id="modal-body" class="modal-body"></div>
+      </div>
+    </div>
+
+    <!-- Modal Playlist Musik -->
+    <div id="playlist-modal" class="modal-overlay" aria-hidden="true">
+      <div class="modal-box" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h3 class="modal-title">arvirmdn Playlist</h3>
+          <button type="button" id="playlist-close" class="ios-btn-icon" aria-label="Tutup">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body playlist-modal-body">
+          <div id="playlist-list" class="playlist-list"></div>
+        </div>
+        <div id="playlist-now-playing" class="playlist-now-playing" style="display:none;">
+          <div class="now-playing-icon"><i class="fa-solid fa-music"></i></div>
+          <div class="now-playing-info">
+            <span id="now-playing-title" class="now-playing-title">-</span>
+            <span id="now-playing-artist" class="now-playing-artist">-</span>
+          </div>
+          <button type="button" id="now-playing-prev" class="ios-btn-icon" aria-label="Sebelumnya">
+            <i class="fa-solid fa-backward-step"></i>
+          </button>
+          <button type="button" id="now-playing-toggle" class="ios-btn-icon" aria-label="Play/Pause">
+            <i class="fa-solid fa-pause"></i>
+          </button>
+          <button type="button" id="now-playing-next" class="ios-btn-icon" aria-label="Berikutnya">
+            <i class="fa-solid fa-forward-step"></i>
+          </button>
+        </div>
       </div>
     </div>
 
