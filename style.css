@@ -147,6 +147,15 @@ body::before {
   width: 64px;
   height: 64px;
   margin-bottom: 8px;
+  --orbit-radius: 42px;
+}
+
+#tab-home .orbit-icon-inner {
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  font-size: 9px;
+  border-width: 2px;
 }
 
 #tab-home .profile-name {
@@ -225,6 +234,7 @@ body::before {
   width: 88px;
   height: 88px;
   margin-bottom: 12px;
+  --orbit-radius: 58px;
 }
 
 .avatar {
@@ -234,12 +244,76 @@ body::before {
   object-fit: cover;
   border: 4px solid var(--ios-blue);
   box-shadow: 0 6px 0 rgba(33, 22, 17, 0.22);
+  position: relative;
+  z-index: 2;
+  background: #fff;
+}
+
+/* Ikon platform yang berputar mengelilingi foto profil */
+.orbit-icons {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  animation: orbit-spin 16s linear infinite;
+}
+
+.orbit-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--angle)) translateX(var(--orbit-radius));
+}
+
+.orbit-icon-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #fff;
+  border: 2px solid var(--bg-color);
+  box-shadow: 0 3px 0 rgba(33, 22, 17, 0.22);
+  animation: orbit-counter-spin 16s linear infinite;
+}
+
+.orbit-tiktok    { background: #010101; }
+.orbit-youtube   { background: #FF0000; }
+.orbit-instagram { background: radial-gradient(circle at 30% 110%, #fdf497 0%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+.orbit-facebook  { background: #1877F2; }
+.orbit-x         { background: #000000; }
+.orbit-spotify   { background: #1DB954; }
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes orbit-counter-spin {
+  from { transform: rotate(calc(-1 * var(--angle))); }
+  to   { transform: rotate(calc(-1 * var(--angle) - 360deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-icons,
+  .orbit-icon-inner {
+    animation: none;
+  }
 }
 
 .ios-music-badge {
   position: absolute;
   bottom: 0;
   right: 0;
+  z-index: 3;
   width: 30px;
   height: 30px;
   border-radius: 4px;
