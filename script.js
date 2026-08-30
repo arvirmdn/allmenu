@@ -61,6 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'unknown';
   }
 
+  // Post TikTok mode foto/slide (carousel) pakai path /photo/<id> di URL-nya,
+  // beda dari /video/<id> untuk video biasa — post foto tidak punya stream
+  // video sama sekali, jadi perlu dialihkan ke alur download foto tersendiri.
+  function isTikTokPhotoUrl(url) {
+    return url.includes('tiktok.com') && url.includes('/photo/');
+  }
+
   // Deteksi link playlist YouTube (bukan sekadar video yang kebetulan dibuka
   // dari dalam playlist). Cermin dari logika is_youtube_playlist() di backend.
   function isYoutubePlaylist(url) {
@@ -420,6 +427,27 @@ document.addEventListener('DOMContentLoaded', () => {
     return apiRequest(`${YTDLP_API_URL}/playlist-info?url=${encodeURIComponent(url)}`);
   }
 
+  async function callYtdlpPhotoApi(url) {
+    return apiRequest(`${YTDLP_API_URL}/download-photo?url=${encodeURIComponent(url)}`);
+  }
+
+  // Fallback khusus foto/slide TikTok lewat TikWM (dipakai kalau instance Railway sedang tidur/down)
+  async function callTikwmPhotoFallback(url) {
+    const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
+    const json = await res.json();
+    const images = json.data?.images;
+    if (!images || !images.length) throw new Error('tikwm_no_photo_result');
+    return {
+      status: 'success',
+      type: 'photo',
+      title: json.data?.title || 'TikTok Photo',
+      photos: images,
+      photo_count: images.length,
+      thumbnail: images[0],
+      _source: 'TikWM (fallback)'
+    };
+  }
+
   // Fallback ringan khusus TikTok video (tidak butuh server sendiri, dipakai kalau instance Railway sedang tidur/down)
   async function callTikwmFallback(url, platform) {
     if (platform !== 'tiktok') throw new Error('no_fallback_for_platform');
@@ -574,6 +602,73 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
+  // Kartu hasil khusus post TikTok mode foto/slide: galeri thumbnail + tombol
+  // download per foto + tombol download semua foto sebagai ZIP.
+  function renderPhotoResultCard(url, data, source, errorMsg) {
+    if (errorMsg) {
+      return `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ TIKTOK FOTO: ${escapeHtml(errorMsg)}</span></div>`;
+    }
+    const photos = data.photos || [];
+    if (!photos.length) {
+      return `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ TIKTOK FOTO: Tidak ada foto ditemukan.</span></div>`;
+    }
+    const title = data.title || 'TikTok Photo';
+    saveHistory({ title, platform: 'tiktok-foto', url });
+    const cardId = `photocard-${Math.random().toString(36).slice(2, 9)}`;
+    const safeTitle = escapeHtml(title);
+    const safeBaseName = escapeHtml(title.replace(/[^\w\-. ]+/g, '').slice(0, 50) || 'tiktok-foto');
+    const safeUrl = escapeHtml(url);
+
+    return `
+      <div id="${cardId}" style="display:flex; flex-direction:column; gap:8px; padding:10px 0; border-bottom:1px solid var(--border-color);">
+        <div class="preview-card">
+          ${photos[0] ? `<img src="${escapeHtml(photos[0])}" class="preview-thumb" onerror="this.style.display='none'">` : ''}
+          <div class="preview-info">
+            <p class="preview-title">${safeTitle}</p>
+            <div class="preview-meta">
+              <span>TIKTOK</span>
+              <span>🖼️ ${photos.length} Foto</span>
+              <span>via ${escapeHtml(source)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="photo-grid">
+          ${photos.map((p, i) => `
+            <div class="photo-grid-item">
+              <img src="${escapeHtml(p)}" onerror="this.style.display='none'">
+              <button type="button" class="photo-download-btn" data-url="${escapeHtml(p)}" data-filename="${safeBaseName}-${i + 1}.jpg" title="Download foto ${i + 1}">
+                <i class="fa-solid fa-download"></i>
+              </button>
+            </div>
+          `).join('')}
+        </div>
+        <button type="button" class="photo-download-all-btn ios-btn-secondary" style="border:none; border-radius:4px; padding:10px; cursor:pointer;" data-url="${safeUrl}">
+          🗜️ Download Semua Foto (ZIP)
+        </button>
+      </div>
+    `;
+  }
+
+  async function processTikTokPhoto(url) {
+    let data, source;
+    try {
+      try {
+        data = await callYtdlpPhotoApi(url);
+        source = 'yt-dlp API';
+      } catch (err) {
+        if (err.status === 429) throw err;
+        data = await callTikwmPhotoFallback(url);
+        source = data._source;
+      }
+    } catch (err) {
+      if (err.status === 429) {
+        return renderRateLimitBanner(err.retryAfter || 30);
+      }
+      return renderPhotoResultCard(url, null, null, err.message);
+    }
+    return renderPhotoResultCard(url, data, source, null);
+  }
+
   // Klik tombol "Salin" & "Download" pada result card (event delegation, karena kartunya dibuat dinamis)
   if (resultBox) {
     resultBox.addEventListener('click', (e) => {
@@ -598,6 +693,61 @@ document.addEventListener('DOMContentLoaded', () => {
           dlBtn.textContent = '⬇️ Download lagi';
           dlBtn.disabled = false;
         });
+        return;
+      }
+      const photoDlBtn = e.target.closest('.photo-download-btn');
+      if (photoDlBtn) {
+        const photoUrl = photoDlBtn.getAttribute('data-url');
+        const filename = photoDlBtn.getAttribute('data-filename') || 'foto.jpg';
+        const icon = photoDlBtn.querySelector('i');
+        photoDlBtn.disabled = true;
+        if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+        fetch(`${YTDLP_API_URL}/proxy-image?source=${encodeURIComponent(photoUrl)}&filename=${encodeURIComponent(filename)}`)
+          .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.blob(); })
+          .then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(blobUrl);
+          })
+          .catch(() => { window.open(photoUrl, '_blank'); })
+          .finally(() => {
+            photoDlBtn.disabled = false;
+            if (icon) icon.className = 'fa-solid fa-download';
+          });
+        return;
+      }
+      const photoZipBtn = e.target.closest('.photo-download-all-btn');
+      if (photoZipBtn) {
+        const sourceUrl = photoZipBtn.getAttribute('data-url');
+        const originalHtml = photoZipBtn.innerHTML;
+        photoZipBtn.disabled = true;
+        photoZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Membungkus ZIP...';
+        fetch(`${YTDLP_API_URL}/download-photos-zip`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: sourceUrl }),
+        })
+          .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.blob(); })
+          .then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = 'tiktok-foto.zip';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(blobUrl);
+          })
+          .catch(err => alert(`Gagal membuat ZIP foto: ${err.message}`))
+          .finally(() => {
+            photoZipBtn.disabled = false;
+            photoZipBtn.innerHTML = originalHtml;
+          });
       }
     });
   }
@@ -720,12 +870,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cards = [];
     for (const url of urls) {
-      const platform = getPlatformFromUrl(url);
-      const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
-      const card = await processOneLink(url, quality);
+      let card;
+      if (isTikTokPhotoUrl(url)) {
+        card = await processTikTokPhoto(url);
+      } else {
+        const platform = getPlatformFromUrl(url);
+        const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
+        card = await processOneLink(url, quality);
+        lastBatch.push({ url, quality });
+      }
       cards.push(card);
       resultBox.innerHTML = cards.join('');
-      lastBatch.push({ url, quality });
     }
     renderHistory();
     if (zipBtn && lastBatch.length > 1) {
