@@ -376,6 +376,32 @@ body::before {
   border-color: var(--ios-blue);
 }
 
+.platform-btn {
+  position: relative;
+  overflow: visible;
+}
+
+.platform-new-badge {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  background: var(--accent-red);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 0 rgba(33, 22, 17, 0.25);
+  animation: badge-pop 1.8s ease-in-out infinite;
+}
+
+@keyframes badge-pop {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
 .quality-btn {
   flex: 1;
   background: var(--input-bg);
@@ -599,6 +625,157 @@ body::before {
 
 .modal-body p {
   margin: 4px 0;
+}
+
+/* ---------- Progress bar (dipakai saat unduh file beneran via /proxy) ---------- */
+.progress-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--ios-blue);
+  border-radius: 4px;
+  transition: width 0.15s ease-out;
+}
+
+.progress-bar-fill.indeterminate {
+  width: 40% !important;
+  animation: progress-indeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes progress-indeterminate {
+  0% { margin-left: -40%; }
+  100% { margin-left: 100%; }
+}
+
+.progress-label {
+  font-size: 10.5px;
+  color: var(--text-sub);
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ---------- Preview card (thumbnail + judul + durasi + ukuran sebelum download) ---------- */
+.preview-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.preview-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--border-color);
+}
+
+.preview-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-title {
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-meta {
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 2px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preview-meta span {
+  background: var(--border-color);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* ---------- Rate limit banner (countdown) ---------- */
+.rate-limit-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(159, 85, 64, 0.15);
+  border: 1px solid var(--accent-red);
+  color: var(--accent-red);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ---------- Playlist picker ---------- */
+.playlist-picker {
+  padding: 10px 0;
+}
+
+.playlist-header {
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.playlist-items {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.playlist-item img {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.playlist-item-title {
+  font-size: 12px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: var(--ios-blue);
 }
 
 /* ---------- Button loading / disabled state ---------- */

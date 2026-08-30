@@ -44,6 +44,27 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'unknown';
   }
 
+  // Deteksi link playlist YouTube (bukan sekadar video yang kebetulan dibuka
+  // dari dalam playlist). Cermin dari logika is_youtube_playlist() di backend.
+  function isYoutubePlaylist(url) {
+    const lower = url.toLowerCase();
+    if (!lower.includes('list=')) return false;
+    if (lower.includes('youtube.com/playlist')) return true;
+    if (lower.includes('watch') && lower.includes('v=')) return false;
+    return lower.includes('youtube.com') || lower.includes('youtu.be');
+  }
+
+  function formatDuration(seconds) {
+    if (!seconds) return '';
+    seconds = Math.floor(seconds);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    const mm = String(m).padStart(h ? 2 : 1, '0');
+    const ss = String(s).padStart(2, '0');
+    return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${mm}:${ss}`;
+  }
+
   const MAX_LINKS = 5;
 
   function extractUrls(raw) {
@@ -96,16 +117,17 @@ document.addEventListener('DOMContentLoaded', () => {
         <h4>1. Pilih Platform</h4>
         <p>Buka tab <b>Tools</b>, lalu pilih platform (TikTok, YouTube, Instagram, Facebook, X, atau Spotify) — atau langsung tempel link-nya, platform akan terdeteksi otomatis.</p>
         <h4>2. Tempel Link</h4>
-        <p>Tempel link video di kotak teks. Bisa beberapa link sekaligus, satu link per baris (maksimal 5 link).</p>
+        <p>Tempel link video di kotak teks. Bisa beberapa link sekaligus, satu link per baris (maksimal 5 link). Kalau kamu tempel link <b>playlist YouTube</b>, kamu akan diminta memilih video mana saja yang mau diunduh.</p>
         <h4>3. Pilih Kualitas</h4>
         <p>Pilih 360p / 720p / 1080p untuk video, atau 🎵 MP3 untuk audio saja. Link Spotify otomatis diunduh sebagai MP3.</p>
-        <h4>4. Download</h4>
-        <p>Tekan tombol panah untuk memproses. Setelah selesai, tekan tombol <b>Download</b> atau <b>Salin</b> link pada hasil.</p>
+        <h4>4. Cek & Download</h4>
+        <p>Tekan tombol panah untuk mengecek link — kamu akan lihat pratinjau (thumbnail, judul, durasi, perkiraan ukuran file) sebelum benar-benar mengunduh. Tekan <b>Download</b> pada kartu hasil untuk mulai mengunduh (ada progress bar-nya).</p>
         <h4>Catatan</h4>
         <ul>
           <li>Video/audio di atas 15 menit akan ditolak server.</li>
           <li>Gunakan tombol 🖼️ Download Thumbnail untuk mengunduh cover video saja.</li>
           <li>Kalau kamu proses lebih dari 1 link sekaligus, tombol 🗜️ <b>Download Semua (ZIP)</b> akan muncul untuk mengunduh semuanya dalam satu file .zip.</li>
+          <li>Kalau server sedang sibuk, kamu akan lihat hitung mundur singkat sebelum bisa coba lagi.</li>
         </ul>
       `
     },
@@ -246,24 +268,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const YTDLP_API_URL = 'https://web-production-0c5698.up.railway.app';
 
-  async function callYtdlpVideoApi(url, quality) {
-    const endpoint = `${YTDLP_API_URL}/download?url=${encodeURIComponent(url)}&quality=${quality}`;
+  // Wrapper fetch generik untuk endpoint JSON di backend kita. Melempar Error
+  // yang membawa `.status` dan (kalau ada) `.retryAfter` supaya pemanggil bisa
+  // membedakan rate-limit (429) dari error biasa dan menampilkan UI yang pas.
+  async function apiRequest(endpoint) {
     const res = await fetch(endpoint);
-    const data = await res.json();
+    let data = {};
+    try { data = await res.json(); } catch {}
     if (!res.ok || data.status === 'error') {
-      throw new Error(data.message || data.detail || `HTTP ${res.status}`);
+      const err = new Error(data.message || data.detail || `HTTP ${res.status}`);
+      err.status = res.status;
+      if (data.retry_after) err.retryAfter = data.retry_after;
+      throw err;
     }
     return data;
   }
 
+  async function callYtdlpVideoApi(url, quality) {
+    return apiRequest(`${YTDLP_API_URL}/download?url=${encodeURIComponent(url)}&quality=${quality}`);
+  }
+
   async function callYtdlpAudioApi(url) {
-    const endpoint = `${YTDLP_API_URL}/download-audio?url=${encodeURIComponent(url)}`;
-    const res = await fetch(endpoint);
-    const data = await res.json();
-    if (!res.ok || data.status === 'error') {
-      throw new Error(data.message || data.detail || `HTTP ${res.status}`);
-    }
-    return data;
+    return apiRequest(`${YTDLP_API_URL}/download-audio?url=${encodeURIComponent(url)}`);
+  }
+
+  async function callPlaylistInfoApi(url) {
+    return apiRequest(`${YTDLP_API_URL}/playlist-info?url=${encodeURIComponent(url)}`);
   }
 
   // Fallback ringan khusus TikTok video (tidak butuh server sendiri, dipakai kalau instance Railway sedang tidur/down)
@@ -282,6 +312,95 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  // ---------- Rate-limit banner (countdown) ----------
+  // Dipakai saat backend balas 429: kasih tahu user berapa detik lagi harus
+  // nunggu, alih-alih cuma teks error generik yang bikin bingung.
+  function renderRateLimitBanner(retryAfter) {
+    let remaining = Math.max(1, Math.ceil(retryAfter));
+    const bannerId = `rl-banner-${Date.now()}`;
+    const html = `
+      <div id="${bannerId}" class="rate-limit-banner">
+        <i class="fa-solid fa-hourglass-half"></i>
+        <span class="rl-text">Server sedang sibuk. Coba lagi dalam <b class="rl-count">${remaining}</b> detik...</span>
+      </div>
+    `;
+    requestAnimationFrame(() => {
+      const el = document.getElementById(bannerId);
+      if (!el) return;
+      const countEl = el.querySelector('.rl-count');
+      const textEl = el.querySelector('.rl-text');
+      const timer = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(timer);
+          if (textEl) textEl.textContent = 'Boleh dicoba lagi sekarang. ';
+          if (downloadBtn) downloadBtn.disabled = false;
+          return;
+        }
+        if (countEl) countEl.textContent = remaining;
+      }, 1000);
+    });
+    if (downloadBtn) downloadBtn.disabled = true;
+    return html;
+  }
+
+  // ---------- Progress bar unduhan real (fetch + ReadableStream) ----------
+  // Dipakai saat user menekan tombol Download di kartu preview. Kalau server
+  // sumbernya mendukung CORS & Content-Length, progress bar-nya real (persentase
+  // beneran). Kalau tidak (mis. beberapa CDN pihak ketiga), otomatis fallback ke
+  // mode indeterminate lalu tetap trigger download normal lewat browser.
+  async function downloadWithProgress(fileUrl, filename, wrapEl) {
+    const fillEl = wrapEl.querySelector('.progress-bar-fill');
+    const labelEl = wrapEl.querySelector('.progress-label');
+
+    try {
+      const res = await fetch(fileUrl);
+      if (!res.ok || !res.body) throw new Error('no_stream');
+
+      const total = parseInt(res.headers.get('content-length') || '0', 10);
+      if (!total) throw new Error('no_content_length');
+
+      const reader = res.body.getReader();
+      const chunks = [];
+      let loaded = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.length;
+        const percent = Math.min(100, Math.round((loaded / total) * 100));
+        fillEl.style.width = `${percent}%`;
+        fillEl.classList.remove('indeterminate');
+        if (labelEl) {
+          labelEl.innerHTML = `<span>${percent}%</span><span>${(loaded / (1024 * 1024)).toFixed(1)} / ${(total / (1024 * 1024)).toFixed(1)} MB</span>`;
+        }
+      }
+
+      const blob = new Blob(chunks);
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || 'download';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+      if (labelEl) labelEl.innerHTML = `<span>✅ Selesai</span><span>${(total / (1024 * 1024)).toFixed(1)} MB</span>`;
+    } catch (err) {
+      // Fallback: nggak bisa dibaca progress-nya (CORS/streaming diblokir),
+      // tampilkan progress indeterminate sebentar lalu buka link download biasa.
+      fillEl.classList.add('indeterminate');
+      if (labelEl) labelEl.innerHTML = `<span>Mengunduh...</span><span></span>`;
+      setTimeout(() => {
+        window.open(fileUrl, '_blank');
+        if (labelEl) labelEl.innerHTML = `<span>✅ Dibuka di tab baru</span><span></span>`;
+        fillEl.classList.remove('indeterminate');
+        fillEl.style.width = '100%';
+      }, 900);
+    }
+  }
+
   function renderResultCard(url, platform, quality, data, source, errorMsg) {
     if (errorMsg) {
       return `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ ${escapeHtml(platform.toUpperCase())}: ${escapeHtml(errorMsg)}</span></div>`;
@@ -297,19 +416,72 @@ document.addEventListener('DOMContentLoaded', () => {
     // di-escape supaya tidak bisa memutus attribute HTML kalau berisi karakter aneh.
     const safeFileUrl = escapeHtml(fileUrl);
     const safeThumb = data.thumbnail ? escapeHtml(data.thumbnail) : '';
+    const durationTxt = data.duration ? formatDuration(data.duration) : '';
+    const filesizeTxt = data.filesize_label || '';
+    const cardId = `card-${Math.random().toString(36).slice(2, 9)}`;
+    const ext = quality === 'mp3' ? 'mp3' : 'mp4';
+    const safeFilename = escapeHtml((title || 'download').replace(/[^\w\-. ]+/g, '').slice(0, 60) + '.' + ext);
+
+    // Preview dulu: thumbnail + judul + durasi + perkiraan ukuran, BARU tombol
+    // Download yang trigger unduhan beneran (dengan progress bar).
     return `
-      <div style="display:flex; flex-direction:column; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-color);">
-        <div style="display:flex; gap:10px; align-items:center;">
-          ${safeThumb ? `<img src="${safeThumb}" style="width:48px; height:48px; border-radius:10px; object-fit:cover;" onerror="this.style.display='none'">` : ''}
-          <div style="overflow:hidden; flex:1;">
-            <p style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(title)}</p>
-            <p style="font-size:11px; color:var(--text-sub);">${escapeHtml(platform.toUpperCase())} • ${escapeHtml(label)} • via ${escapeHtml(source)}</p>
+      <div id="${cardId}" style="display:flex; flex-direction:column; gap:8px; padding:10px 0; border-bottom:1px solid var(--border-color);">
+        <div class="preview-card">
+          ${safeThumb ? `<img src="${safeThumb}" class="preview-thumb" onerror="this.style.display='none'">` : ''}
+          <div class="preview-info">
+            <p class="preview-title">${escapeHtml(title)}</p>
+            <div class="preview-meta">
+              <span>${escapeHtml(platform.toUpperCase())}</span>
+              <span>${escapeHtml(label)}</span>
+              ${durationTxt ? `<span>⏱️ ${escapeHtml(durationTxt)}</span>` : ''}
+              ${filesizeTxt ? `<span>📦 ~${escapeHtml(filesizeTxt)}</span>` : ''}
+              <span>via ${escapeHtml(source)}</span>
+            </div>
           </div>
-          <button type="button" class="copy-link-btn" data-url="${safeFileUrl}" style="background:var(--input-bg); border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:12px;">📋 Salin</button>
+          <button type="button" class="copy-link-btn" data-url="${safeFileUrl}" style="background:var(--input-bg); border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:12px;">📋</button>
         </div>
-        <a href="${safeFileUrl}" target="_blank" download class="download-option-btn" style="background:var(--ios-blue);">⬇️ Download</a>
+        <button type="button" class="do-download-btn download-option-btn" style="background:var(--ios-blue); border:none; cursor:pointer;"
+          data-url="${safeFileUrl}" data-filename="${safeFilename}">⬇️ Download${filesizeTxt ? ` (~${escapeHtml(filesizeTxt)})` : ''}</button>
+        <div class="progress-bar-wrap" style="display:none;">
+          <div class="progress-bar-fill"></div>
+        </div>
+        <div class="progress-label" style="display:none;"><span></span><span></span></div>
       </div>
     `;
+  }
+
+  // Klik tombol "Salin" & "Download" pada result card (event delegation, karena kartunya dibuat dinamis)
+  if (resultBox) {
+    resultBox.addEventListener('click', (e) => {
+      const copyBtn = e.target.closest('.copy-link-btn');
+      if (copyBtn) {
+        const url = copyBtn.getAttribute('data-url');
+        if (url) navigator.clipboard.writeText(url).catch(() => {});
+        return;
+      }
+      const dlBtn = e.target.closest('.do-download-btn');
+      if (dlBtn) {
+        const fileUrl = dlBtn.getAttribute('data-url');
+        const filename = dlBtn.getAttribute('data-filename');
+        const wrap = dlBtn.parentElement;
+        const barWrap = wrap.querySelector('.progress-bar-wrap');
+        const label = wrap.querySelector('.progress-label');
+        if (barWrap) barWrap.style.display = 'block';
+        if (label) label.style.display = 'flex';
+        dlBtn.disabled = true;
+        dlBtn.textContent = 'Mengunduh...';
+        downloadWithProgress(fileUrl, filename, wrap).finally(() => {
+          dlBtn.textContent = '⬇️ Download lagi';
+          dlBtn.disabled = false;
+        });
+      }
+    });
+  }
+
+  function setBtnLoading(btn, loading, loadingHtml, normalHtml) {
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.innerHTML = loading ? loadingHtml : normalHtml;
   }
 
   async function processOneLink(url, quality) {
@@ -328,30 +500,113 @@ document.addEventListener('DOMContentLoaded', () => {
           data = await callYtdlpVideoApi(url, quality);
           source = 'yt-dlp API';
         } catch (err) {
+          if (err.status === 429) throw err;
           data = await callTikwmFallback(url, platform);
           source = data._source;
         }
       }
     } catch (err) {
+      if (err.status === 429) {
+        return renderRateLimitBanner(err.retryAfter || 30);
+      }
       return renderResultCard(url, platform, quality, null, null, err.message);
     }
     return renderResultCard(url, platform, quality, data, source, null);
   }
 
-  // Klik tombol "Salin" pada result card (event delegation, karena kartunya dibuat dinamis)
-  if (resultBox) {
-    resultBox.addEventListener('click', (e) => {
-      const btn = e.target.closest('.copy-link-btn');
-      if (!btn) return;
-      const url = btn.getAttribute('data-url');
-      if (url) navigator.clipboard.writeText(url).catch(() => {});
+  // ---------- Playlist YouTube: tampilkan checklist video untuk dipilih ----------
+  async function handlePlaylistUrl(playlistUrl) {
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Membaca daftar video di playlist...</div>';
+    setBtnLoading(downloadBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i>', downloadBtn.innerHTML);
+
+    let info;
+    try {
+      info = await callPlaylistInfoApi(playlistUrl);
+    } catch (err) {
+      if (err.status === 429) {
+        resultBox.innerHTML = renderRateLimitBanner(err.retryAfter || 30);
+      } else {
+        resultBox.innerHTML = `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ Gagal membaca playlist: ${escapeHtml(err.message)}</span></div>`;
+      }
+      setBtnLoading(downloadBtn, false, '', downloadBtn.innerHTML);
+      return;
+    } finally {
+      setBtnLoading(downloadBtn, false, '', '<i class="fa-solid fa-arrow-down"></i>');
+    }
+
+    const items = info.items || [];
+    const truncatedNote = info.truncated
+      ? `<p style="font-size:10.5px; color:var(--text-sub); margin-top:4px;">Menampilkan ${items.length} video pertama dari playlist ini.</p>` : '';
+
+    resultBox.innerHTML = `
+      <div class="playlist-picker">
+        <div class="playlist-header">
+          <span>🎵 ${escapeHtml(info.playlist_title)} — pilih maks ${MAX_LINKS} video</span>
+          <span id="playlist-selected-count">0/${MAX_LINKS}</span>
+        </div>
+        <div class="playlist-items">
+          ${items.map((it, idx) => `
+            <label class="playlist-item">
+              <input type="checkbox" class="playlist-check" data-url="${escapeHtml(it.url)}" data-title="${escapeHtml(it.title)}">
+              ${it.thumbnail ? `<img src="${escapeHtml(it.thumbnail)}" onerror="this.style.display='none'">` : ''}
+              <span class="playlist-item-title">${escapeHtml(it.title)}</span>
+              <span style="font-size:10.5px; color:var(--text-sub); flex-shrink:0;">${it.duration ? escapeHtml(formatDuration(it.duration)) : ''}</span>
+            </label>
+          `).join('')}
+        </div>
+        ${truncatedNote}
+        <button type="button" id="playlist-process-btn" class="ios-btn-secondary" style="margin-top:10px; width:100%; padding:10px; border:none; border-radius:4px; cursor:pointer;" disabled>
+          Pilih video dulu untuk diproses
+        </button>
+      </div>
+    `;
+
+    const checks = resultBox.querySelectorAll('.playlist-check');
+    const countLabel = resultBox.querySelector('#playlist-selected-count');
+    const processBtn = resultBox.querySelector('#playlist-process-btn');
+
+    function updateSelection() {
+      const checked = resultBox.querySelectorAll('.playlist-check:checked');
+      countLabel.textContent = `${checked.length}/${MAX_LINKS}`;
+      checks.forEach(c => { if (!c.checked) c.disabled = checked.length >= MAX_LINKS; });
+      processBtn.disabled = checked.length === 0;
+      processBtn.textContent = checked.length === 0
+        ? 'Pilih video dulu untuk diproses'
+        : `⬇️ Proses ${checked.length} Video Terpilih`;
+    }
+    checks.forEach(c => c.addEventListener('change', updateSelection));
+
+    processBtn.addEventListener('click', async () => {
+      const selectedUrls = Array.from(resultBox.querySelectorAll('.playlist-check:checked')).map(c => c.getAttribute('data-url'));
+      if (!selectedUrls.length) return;
+      await runBatchDownload(selectedUrls);
     });
   }
 
-  function setBtnLoading(btn, loading, loadingHtml, normalHtml) {
-    if (!btn) return;
-    btn.disabled = loading;
-    btn.innerHTML = loading ? loadingHtml : normalHtml;
+  // ---------- Alur proses batch (dipakai flow normal & hasil pilihan playlist) ----------
+  async function runBatchDownload(urls) {
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = urls.length > 1
+      ? `<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses ${urls.length} link satu-satu...</div>`
+      : '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</div>';
+
+    lastBatch = [];
+    if (zipBtn) zipBtn.style.display = 'none';
+
+    const cards = [];
+    for (const url of urls) {
+      const platform = getPlatformFromUrl(url);
+      const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
+      const card = await processOneLink(url, quality);
+      cards.push(card);
+      resultBox.innerHTML = cards.join('');
+      lastBatch.push({ url, quality });
+    }
+    renderHistory();
+    if (zipBtn && lastBatch.length > 1) {
+      zipBtn.style.display = 'block';
+    }
   }
 
   if (downloadBtn) {
@@ -367,32 +622,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      // Playlist YouTube: alih-alih langsung download, tampilkan checklist dulu.
+      if (urls.length === 1 && isYoutubePlaylist(urls[0])) {
+        await handlePlaylistUrl(urls[0]);
+        return;
+      }
+
       setBtnLoading(downloadBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i>', downloadBtnDefaultHtml);
       if (thumbBtn) thumbBtn.disabled = true;
-
-      resultBox.style.display = 'block';
-      resultBox.innerHTML = urls.length > 1
-        ? `<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses ${urls.length} link satu-satu...</div>`
-        : '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</div>';
-
-      lastBatch = [];
-      if (zipBtn) zipBtn.style.display = 'none';
-
       try {
-        const cards = [];
-        for (const url of urls) {
-          const platform = getPlatformFromUrl(url);
-          const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
-          const card = await processOneLink(url, quality);
-          cards.push(card);
-          resultBox.innerHTML = cards.join('');
-          lastBatch.push({ url, quality });
-        }
-        renderHistory();
-        // Tombol ZIP cuma berguna kalau link-nya lebih dari satu
-        if (zipBtn && lastBatch.length > 1) {
-          zipBtn.style.display = 'block';
-        }
+        await runBatchDownload(urls);
       } finally {
         setBtnLoading(downloadBtn, false, '', downloadBtnDefaultHtml);
         if (thumbBtn) thumbBtn.disabled = false;
@@ -414,7 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (!res.ok) {
           let msg = `HTTP ${res.status}`;
-          try { msg = (await res.json()).detail || msg; } catch {}
+          try { msg = (await res.json()).message || msg; } catch {}
           throw new Error(msg);
         }
         const blob = await res.blob();
