@@ -1,24 +1,53 @@
 document.addEventListener('DOMContentLoaded', () => {
   // ---------- Sound Effect Function ----------
   // Generate beep sound menggunakan Web Audio API
+  // PENTING: AudioContext dibuat SEKALI saja dan dipakai ulang.
+  // Sebelumnya `new AudioContext()` dipanggil di setiap klik, dan browser
+  // membatasi jumlah AudioContext aktif secara bersamaan — jadi kalau tombol
+  // dipencet cepat, context baru gagal dibuat dan bunyinya hilang diam-diam.
+  let sharedAudioContext = null;
+  function getAudioContext() {
+    if (!sharedAudioContext) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      sharedAudioContext = new AC();
+    }
+    return sharedAudioContext;
+  }
+
   function playSound(frequency = 800, duration = 80) {
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioContext = getAudioContext();
+      if (!audioContext) return;
+
+      // Jika context ter-suspend (misal tab baru dibuka / autoplay policy),
+      // resume dulu supaya bunyi tetap keluar.
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
+
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       oscillator.frequency.value = frequency; // Hz
       oscillator.type = 'sine';
-      
+
+      const now = audioContext.currentTime;
       // Fade in & out untuk smooth sound
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration / 1000);
+      gainNode.gain.setValueAtTime(0.3, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration / 1000);
+
+      oscillator.start(now);
+      oscillator.stop(now + duration / 1000);
+
+      // Bersihkan node setelah selesai supaya tidak menumpuk di memori
+      oscillator.onended = () => {
+        oscillator.disconnect();
+        gainNode.disconnect();
+      };
     } catch (e) {
       // Silent fail jika Audio API tidak tersedia
     }
