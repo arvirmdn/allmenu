@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const downloadBtn = document.getElementById('download-btn');
   const thumbBtn = document.getElementById('thumb-btn');
   const mediaUrlInput = document.getElementById('media-url');
+  const clearLinkBtn = document.getElementById('clear-link-btn');
   const resultBox = document.getElementById('result-box');
   const platformBtns = document.querySelectorAll('.platform-btn');
   const qualityBtns = document.querySelectorAll('.quality-btn');
@@ -130,6 +131,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!confirm('Hapus semua riwayat download?')) return;
       try { localStorage.removeItem('downloadHistory'); } catch {}
       renderHistory();
+    });
+  }
+
+  // Tombol hapus link yang ditempel
+  if (clearLinkBtn) {
+    clearLinkBtn.addEventListener('click', () => {
+      mediaUrlInput.value = '';
+      mediaUrlInput.style.height = 'auto';
+      mediaUrlInput.focus();
     });
   }
 
@@ -592,8 +602,11 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <button type="button" class="copy-link-btn" data-url="${safeFileUrl}" style="background:var(--input-bg); border:none; border-radius:4px; padding:6px 10px; cursor:pointer; font-size:12px;">📋</button>
         </div>
-        <button type="button" class="do-download-btn download-option-btn" style="background:var(--ios-blue); border:none; cursor:pointer;"
-          data-url="${safeFileUrl}" data-filename="${safeFilename}">⬇️ Download${filesizeTxt ? ` (~${escapeHtml(filesizeTxt)})` : ''}</button>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="do-download-btn download-option-btn" style="flex:1; background:var(--ios-blue); border:none; cursor:pointer;"
+            data-url="${safeFileUrl}" data-filename="${safeFilename}">⬇️ Download${filesizeTxt ? ` (~${escapeHtml(filesizeTxt)})` : ''}</button>
+          <button type="button" class="delete-result-btn" style="width:44px; height:44px; background:#ff3b30; border:none; cursor:pointer; color:white; font-size:18px; border-radius:4px; display:flex; align-items:center; justify-content:center;" title="Hapus dari daftar">🗑️</button>
+        </div>
         <div class="progress-bar-wrap" style="display:none;">
           <div class="progress-bar-fill"></div>
         </div>
@@ -642,9 +655,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           `).join('')}
         </div>
-        <button type="button" class="photo-download-all-btn ios-btn-secondary" style="border:none; border-radius:4px; padding:10px; cursor:pointer;" data-url="${safeUrl}">
-          🗜️ Download Semua Foto (ZIP)
-        </button>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="photo-download-all-btn ios-btn-secondary" style="flex:1; border:none; border-radius:4px; padding:10px; cursor:pointer;" data-url="${safeUrl}">
+            🗜️ Download Semua (ZIP)
+          </button>
+          <button type="button" class="delete-result-btn" style="width:44px; height:44px; background:#ff3b30; border:none; cursor:pointer; color:white; font-size:18px; border-radius:4px; display:flex; align-items:center; justify-content:center;" title="Hapus galeri ini">🗑️</button>
+        </div>
       </div>
     `;
   }
@@ -669,9 +685,28 @@ document.addEventListener('DOMContentLoaded', () => {
     return renderPhotoResultCard(url, data, source, null);
   }
 
-  // Klik tombol "Salin" & "Download" pada result card (event delegation, karena kartunya dibuat dinamis)
+  // Klik tombol "Salin", "Hapus", & "Download" pada result card (event delegation, karena kartunya dibuat dinamis)
   if (resultBox) {
     resultBox.addEventListener('click', (e) => {
+      // Tombol Hapus (Delete)
+      const deleteBtn = e.target.closest('.delete-result-btn');
+      if (deleteBtn) {
+        const card = deleteBtn.closest('[id^="card-"], [id^="photocard-"]');
+        if (card) {
+          card.style.animation = 'fadeOut 0.3s ease-out forwards';
+          setTimeout(() => {
+            card.remove();
+            // Cek apakah masih ada cards di result-box
+            const remainingCards = resultBox.querySelectorAll('[id^="card-"], [id^="photocard-"]').length;
+            if (remainingCards === 0) {
+              resultBox.innerHTML = '';
+              resultBox.style.display = 'none';
+            }
+          }, 300);
+        }
+        return;
+      }
+      
       const copyBtn = e.target.closest('.copy-link-btn');
       if (copyBtn) {
         const url = copyBtn.getAttribute('data-url');
@@ -682,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dlBtn) {
         const fileUrl = dlBtn.getAttribute('data-url');
         const filename = dlBtn.getAttribute('data-filename');
-        const wrap = dlBtn.parentElement;
+        const wrap = dlBtn.closest('div[style*="gap:8px"]').parentElement;
         const barWrap = wrap.querySelector('.progress-bar-wrap');
         const label = wrap.querySelector('.progress-label');
         if (barWrap) barWrap.style.display = 'block';

@@ -227,9 +227,14 @@
 
           <div class="ios-input-group">
             <textarea id="media-url" placeholder="Tempel link video di sini... (bisa beberapa link, satu per baris, maks 5)" autocomplete="off" rows="1"></textarea>
-            <button id="download-btn" class="ios-btn-primary">
-              <i class="fa-solid fa-arrow-down"></i>
-            </button>
+            <div style="display: flex; gap: 6px;">
+              <button id="clear-link-btn" class="ios-btn-secondary" title="Hapus link">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+              <button id="download-btn" class="ios-btn-primary">
+                <i class="fa-solid fa-arrow-down"></i>
+              </button>
+            </div>
           </div>
 
           <!-- Kualitas Video -->
