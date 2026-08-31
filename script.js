@@ -95,6 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentTrackIndex = -1;
   let isPlaying = false;
   let selectedQuality = '720';
+  const urlPreviewBox = document.getElementById('url-preview-box');
+  const previewCache = new Map(); // key: `${url}|${quality}` -> { data, source }
+  let previewDebounceTimer = null;
+  let previewRequestToken = 0; // biar hasil fetch lama yang telat nggak nimpa preview yang lebih baru
   let lastBatch = []; // [{url, quality}] dari proses terakhir, dipakai tombol ZIP
 
   // Escape teks yang berasal dari luar (judul video, dsb.) sebelum dimasukkan
@@ -194,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mediaUrlInput.value = '';
       mediaUrlInput.style.height = 'auto';
       mediaUrlInput.focus();
+      clearUrlPreview();
     });
   }
 
@@ -423,6 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('active');
       resultBox.style.display = 'none';
       mediaUrlInput.value = '';
+      clearUrlPreview();
       if (btn.getAttribute('data-platform') === 'spotify') {
         qualityBtns.forEach(b => b.classList.remove('active'));
         const mp3Btn = document.querySelector('.quality-btn[data-quality="mp3"]');
@@ -436,6 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
       qualityBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       selectedQuality = btn.getAttribute('data-quality');
+      scheduleUrlPreview();
     });
   });
 
@@ -458,6 +465,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (mp3Btn) { mp3Btn.classList.add('active'); selectedQuality = 'mp3'; }
         }
       }
+
+      scheduleUrlPreview();
     });
   }
 
@@ -841,6 +850,135 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ---------- Progress card (indikator loading yang lebih jelas dari spinner polos) ----------
+  let progressTimerInterval = null;
+
+  function renderProgressCard(label) {
+    return `
+      <div class="progress-card">
+        <div class="progress-header"><i class="fa-solid fa-spinner fa-spin"></i> <span>${escapeHtml(label)}</span></div>
+        <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+        <div class="progress-elapsed">Sudah berjalan <span id="progress-elapsed-time">0</span> detik</div>
+      </div>
+    `;
+  }
+
+  function startProgressTimer() {
+    stopProgressTimer();
+    const startedAt = Date.now();
+    progressTimerInterval = setInterval(() => {
+      const el = document.getElementById('progress-elapsed-time');
+      if (!el) return; // resultBox sudah diganti isinya (proses selesai)
+      el.textContent = Math.floor((Date.now() - startedAt) / 1000);
+    }, 1000);
+  }
+
+  function stopProgressTimer() {
+    if (progressTimerInterval) {
+      clearInterval(progressTimerInterval);
+      progressTimerInterval = null;
+    }
+  }
+
+  function setControlsDisabled(disabled) {
+    platformBtns.forEach(b => { b.disabled = disabled; });
+    qualityBtns.forEach(b => { b.disabled = disabled; });
+  }
+
+  // ---------- Preview thumbnail otomatis (sebelum user klik Download) ----------
+  function clearUrlPreview() {
+    if (!urlPreviewBox) return;
+    previewDebounceTimer && clearTimeout(previewDebounceTimer);
+    previewRequestToken++; // batalkan hasil fetch preview yang masih nyantol di udara
+    urlPreviewBox.innerHTML = '';
+  }
+
+  function scheduleUrlPreview() {
+    if (!urlPreviewBox) return;
+    previewDebounceTimer && clearTimeout(previewDebounceTimer);
+    previewDebounceTimer = setTimeout(runUrlPreview, 700);
+  }
+
+  async function runUrlPreview() {
+    const rawInput = mediaUrlInput.value.trim();
+    const urls = extractUrls(rawInput);
+
+    // Preview otomatis cuma buat 1 link tunggal yang jelas (bukan playlist,
+    // bukan multi-link, biar nggak boros kuota rate-limit backend).
+    if (urls.length !== 1 || isYoutubePlaylist(urls[0])) {
+      urlPreviewBox.innerHTML = '';
+      return;
+    }
+
+    const url = urls[0];
+    const platform = getPlatformFromUrl(url);
+    if (platform === 'unknown') {
+      urlPreviewBox.innerHTML = '';
+      return;
+    }
+
+    const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
+    const cacheKey = `${url}|${quality}`;
+    const myToken = ++previewRequestToken;
+
+    if (previewCache.has(cacheKey)) {
+      renderUrlPreviewCard(previewCache.get(cacheKey), platform);
+      return;
+    }
+
+    urlPreviewBox.innerHTML = `
+      <div class="url-preview-card is-loading">
+        <div class="url-preview-skeleton"></div>
+        <div class="url-preview-info">
+          <div class="url-preview-title">Mengambil pratinjau...</div>
+        </div>
+      </div>
+    `;
+
+    try {
+      let data;
+      if (isTikTokPhotoUrl(url)) {
+        data = await callYtdlpPhotoApi(url).catch(() => callTikwmPhotoFallback(url));
+      } else if (quality === 'mp3') {
+        data = await callYtdlpAudioApi(url);
+      } else {
+        try {
+          data = await callYtdlpVideoApi(url, quality);
+        } catch (err) {
+          if (err.status === 429) throw err;
+          data = await callTikwmFallback(url, platform);
+        }
+      }
+      if (myToken !== previewRequestToken) return; // user udah ganti link, hasil ini basi
+      previewCache.set(cacheKey, data);
+      renderUrlPreviewCard(data, platform);
+    } catch (err) {
+      if (myToken !== previewRequestToken) return;
+      urlPreviewBox.innerHTML = ''; // gagal preview: diam aja, biar tombol Download yang nanti nunjukin error-nya
+    }
+  }
+
+  function renderUrlPreviewCard(data, platform) {
+    if (!urlPreviewBox) return;
+    const title = data.title || 'Tanpa judul';
+    const thumb = data.thumbnail;
+    const durationTxt = data.duration ? formatDuration(data.duration) : '';
+    const platformLabel = (data.platform || platform || '').toString().toUpperCase();
+    const metaParts = [platformLabel, durationTxt].filter(Boolean).join(' • ');
+
+    urlPreviewBox.innerHTML = `
+      <div class="url-preview-card">
+        ${thumb
+          ? `<img src="${escapeHtml(thumb)}" alt="thumbnail" onerror="this.outerHTML='<div class=&quot;url-preview-icon-fallback&quot;><i class=&quot;fa-solid fa-film&quot;></i></div>'">`
+          : `<div class="url-preview-icon-fallback"><i class="fa-solid fa-film"></i></div>`}
+        <div class="url-preview-info">
+          <div class="url-preview-title">${escapeHtml(title)}</div>
+          <div class="url-preview-meta">${escapeHtml(metaParts)}</div>
+        </div>
+      </div>
+    `;
+  }
+
   function setBtnLoading(btn, loading, loadingHtml, normalHtml) {
     if (!btn) return;
     btn.disabled = loading;
@@ -851,6 +989,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const platform = getPlatformFromUrl(url);
     if (platform === 'unknown') {
       return renderResultCard(url, 'unknown', quality, null, null, 'Link tidak dikenali.');
+    }
+
+    // Kalau baru saja di-preview dengan url+quality yang persis sama, pakai
+    // hasil itu langsung daripada nge-fetch ulang ke server.
+    const cacheKey = `${url}|${quality}`;
+    if (previewCache.has(cacheKey)) {
+      const cached = previewCache.get(cacheKey);
+      previewCache.delete(cacheKey);
+      if (cached && cached.type === 'photo') {
+        return renderPhotoResultCard(url, cached, 'yt-dlp API', null);
+      }
+      return renderResultCard(url, platform, quality, cached, 'yt-dlp API', null);
     }
 
     let data, source;
@@ -886,23 +1036,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---------- Playlist YouTube: tampilkan checklist video untuk dipilih ----------
   async function handlePlaylistUrl(playlistUrl) {
     resultBox.style.display = 'block';
-    resultBox.innerHTML = '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Membaca daftar video di playlist...</div>';
+    resultBox.innerHTML = renderProgressCard('Membaca daftar video di playlist...');
+    startProgressTimer();
     setBtnLoading(downloadBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i>', downloadBtn.innerHTML);
+    setControlsDisabled(true);
 
     let info;
     try {
       info = await callPlaylistInfoApi(playlistUrl);
     } catch (err) {
+      stopProgressTimer();
       if (err.status === 429) {
         resultBox.innerHTML = renderRateLimitBanner(err.retryAfter || 30);
       } else {
         resultBox.innerHTML = `<div style="padding:8px 0;"><span style="color:#ff3b30;">❌ Gagal membaca playlist: ${escapeHtml(err.message)}</span></div>`;
       }
       setBtnLoading(downloadBtn, false, '', downloadBtn.innerHTML);
+      setControlsDisabled(false);
       return;
     } finally {
       setBtnLoading(downloadBtn, false, '', '<i class="fa-solid fa-arrow-down"></i>');
     }
+
+    stopProgressTimer();
+    setControlsDisabled(false);
 
     const items = info.items || [];
     const truncatedNote = info.truncated
@@ -956,27 +1113,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---------- Alur proses batch (dipakai flow normal & hasil pilihan playlist) ----------
   async function runBatchDownload(urls) {
     resultBox.style.display = 'block';
-    resultBox.innerHTML = urls.length > 1
-      ? `<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses ${urls.length} link satu-satu...</div>`
-      : '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses...</div>';
+    clearUrlPreview();
+    resultBox.innerHTML = renderProgressCard(
+      urls.length > 1 ? `Memproses ${urls.length} link satu-satu...` : 'Memproses...'
+    );
+    startProgressTimer();
+    setControlsDisabled(true);
 
     lastBatch = [];
     if (zipBtn) zipBtn.style.display = 'none';
 
     const cards = [];
-    for (const url of urls) {
-      let card;
-      if (isTikTokPhotoUrl(url)) {
-        card = await processTikTokPhoto(url);
-      } else {
-        const platform = getPlatformFromUrl(url);
-        const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
-        card = await processOneLink(url, quality);
-        lastBatch.push({ url, quality });
+    try {
+      for (const url of urls) {
+        let card;
+        if (isTikTokPhotoUrl(url)) {
+          card = await processTikTokPhoto(url);
+        } else {
+          const platform = getPlatformFromUrl(url);
+          const quality = platform === 'spotify' ? 'mp3' : selectedQuality;
+          card = await processOneLink(url, quality);
+          lastBatch.push({ url, quality });
+        }
+        cards.push(card);
       }
-      cards.push(card);
-      resultBox.innerHTML = cards.join('');
+    } finally {
+      stopProgressTimer();
+      setControlsDisabled(false);
     }
+    resultBox.innerHTML = cards.join('');
     renderHistory();
     if (zipBtn && lastBatch.length > 1) {
       zipBtn.style.display = 'block';
@@ -1072,6 +1237,60 @@ document.addEventListener('DOMContentLoaded', () => {
         setBtnLoading(thumbBtn, false, '', thumbBtnDefaultHtml);
         if (downloadBtn) downloadBtn.disabled = false;
       }
+    });
+  }
+
+  // ---------- Tools: QR Code Generator ----------
+  const qrInput = document.getElementById('qr-input');
+  const qrGenerateBtn = document.getElementById('qr-generate-btn');
+  const qrResult = document.getElementById('qr-result');
+
+  if (qrGenerateBtn && qrInput && qrResult) {
+    const qrBtnDefaultHtml = qrGenerateBtn.innerHTML;
+    qrGenerateBtn.addEventListener('click', async () => {
+      const text = qrInput.value.trim();
+      if (!text) { alert('Isi link atau teks dulu!'); return; }
+
+      setBtnLoading(qrGenerateBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i>', qrBtnDefaultHtml);
+      qrResult.style.display = 'block';
+      qrResult.innerHTML = '<div class="url-preview-skeleton" style="margin:0 auto; width:180px; height:180px; border-radius:8px;"></div>';
+
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+      try {
+        const res = await fetch(qrApiUrl);
+        if (!res.ok) throw new Error('Gagal membuat QR code.');
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        qrResult.innerHTML = `
+          <img src="${blobUrl}" alt="QR code">
+          <div style="margin-top:8px;">
+            <button type="button" id="qr-download-btn" class="ios-btn-secondary" style="padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
+              <i class="fa-solid fa-download"></i> Simpan QR
+            </button>
+          </div>
+        `;
+        const qrDownloadBtn = document.getElementById('qr-download-btn');
+        if (qrDownloadBtn) {
+          qrDownloadBtn.addEventListener('click', () => {
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = 'qrcode.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          });
+        }
+      } catch (err) {
+        qrResult.innerHTML = `<span style="color:var(--accent-red); font-size:12px;">❌ ${escapeHtml(err.message)}</span>`;
+      } finally {
+        setBtnLoading(qrGenerateBtn, false, '', qrBtnDefaultHtml);
+      }
+    });
+
+    // Auto-resize textarea QR, sama kayak input link utama
+    qrInput.addEventListener('input', () => {
+      qrInput.style.height = 'auto';
+      qrInput.style.height = Math.min(qrInput.scrollHeight, 90) + 'px';
     });
   }
 

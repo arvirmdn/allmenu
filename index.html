@@ -203,9 +203,43 @@
     <main id="tab-tools" class="tab-content">
       <section class="ios-section">
         <h2 class="section-label">Tools</h2>
-        <div class="ios-card" style="text-align:center; padding:32px 20px; color:var(--text-sub);">
-          <i class="fa-solid fa-screwdriver-wrench" style="font-size:28px; margin-bottom:10px; display:block; color:var(--ios-blue);"></i>
-          Fitur Tools akan segera hadir di sini.
+
+        <div class="ios-card" style="padding:16px;">
+          <p style="font-size:12px; font-weight:600; margin-bottom:4px;"><i class="fa-solid fa-qrcode" style="color:var(--ios-blue); margin-right:6px;"></i>QR Code Generator</p>
+          <p style="font-size:11px; color:var(--text-sub); margin-bottom:10px;">Bikin QR code dari link atau teks apa saja — misal buat share link web ini.</p>
+          <div class="ios-input-group">
+            <textarea id="qr-input" placeholder="Tempel link atau teks di sini..." autocomplete="off" rows="1"></textarea>
+            <button id="qr-generate-btn" class="ios-btn-primary">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+          </div>
+          <div id="qr-result" class="qr-result" style="display:none;"></div>
+        </div>
+      </section>
+
+      <section class="ios-section">
+        <h2 class="section-label">Segera Hadir</h2>
+        <div class="tools-grid">
+          <div class="tool-item-soon">
+            <i class="fa-solid fa-file-video"></i>
+            <span>Convert Format</span>
+            <span class="soon-badge">Segera</span>
+          </div>
+          <div class="tool-item-soon">
+            <i class="fa-solid fa-compress"></i>
+            <span>Compress Video</span>
+            <span class="soon-badge">Segera</span>
+          </div>
+          <div class="tool-item-soon">
+            <i class="fa-solid fa-film"></i>
+            <span>Video ke GIF</span>
+            <span class="soon-badge">Segera</span>
+          </div>
+          <div class="tool-item-soon">
+            <i class="fa-solid fa-scissors"></i>
+            <span>Potong Video</span>
+            <span class="soon-badge">Segera</span>
+          </div>
         </div>
       </section>
     </main>
@@ -236,6 +270,9 @@
               </button>
             </div>
           </div>
+
+          <!-- Preview thumbnail otomatis saat 1 link valid ditempel -->
+          <div id="url-preview-box"></div>
 
           <!-- Kualitas Video -->
           <div class="quality-selector" style="margin-top:12px;">
