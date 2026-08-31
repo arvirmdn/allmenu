@@ -52,6 +52,44 @@ document.addEventListener('DOMContentLoaded', () => {
       // Silent fail jika Audio API tidak tersedia
     }
   }
+
+  // Bunyi khusus tombol hapus: nada meluncur turun (bukan beep datar biasa),
+  // biar kerasa beda dan "berkesan menghapus" dibanding klik tombol umum.
+  function playDeleteSound() {
+    try {
+      const audioContext = getAudioContext();
+      if (!audioContext) return;
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.type = 'sine';
+      const now = audioContext.currentTime;
+      const duration = 0.16;
+
+      oscillator.frequency.setValueAtTime(600, now);
+      oscillator.frequency.exponentialRampToValueAtTime(180, now + duration);
+
+      gainNode.gain.setValueAtTime(0.28, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+      oscillator.start(now);
+      oscillator.stop(now + duration);
+
+      oscillator.onended = () => {
+        oscillator.disconnect();
+        gainNode.disconnect();
+      };
+    } catch (e) {
+      // Silent fail jika Audio API tidak tersedia
+    }
+  }
   
   const themeToggle = document.getElementById('theme-toggle');
   const shareBtn = document.getElementById('share-btn');
@@ -187,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (clearHistoryBtn) {
     clearHistoryBtn.addEventListener('click', () => {
       if (!confirm('Hapus semua riwayat download?')) return;
+      playDeleteSound();
       try { localStorage.removeItem('downloadHistory'); } catch {}
       renderHistory();
     });
@@ -195,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Tombol hapus link yang ditempel
   if (clearLinkBtn) {
     clearLinkBtn.addEventListener('click', () => {
+      playDeleteSound();
       mediaUrlInput.value = '';
       mediaUrlInput.style.height = 'auto';
       mediaUrlInput.focus();
@@ -668,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div style="display:flex; gap:6px;">
           <button type="button" class="do-download-btn download-option-btn" style="flex:1; background:var(--ios-blue); border:none; cursor:pointer;"
             data-url="${safeFileUrl}" data-filename="${safeFilename}">⬇️ Download${filesizeTxt ? ` (~${escapeHtml(filesizeTxt)})` : ''}</button>
-          <button type="button" class="delete-result-btn" style="width:44px; height:44px; background:#ff3b30; border:none; cursor:pointer; color:white; font-size:18px; border-radius:4px; display:flex; align-items:center; justify-content:center;" title="Hapus dari daftar">🗑️</button>
+          <button type="button" class="delete-result-btn" data-no-sound style="width:44px; height:44px; background:#ff3b30; border:none; cursor:pointer; color:white; font-size:18px; border-radius:4px; display:flex; align-items:center; justify-content:center;" title="Hapus dari daftar">🗑️</button>
         </div>
         <div class="progress-bar-wrap" style="display:none;">
           <div class="progress-bar-fill"></div>
@@ -722,7 +762,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="photo-download-all-btn ios-btn-secondary" style="flex:1; border:none; border-radius:4px; padding:10px; cursor:pointer;" data-url="${safeUrl}">
             🗜️ Download Semua (ZIP)
           </button>
-          <button type="button" class="delete-result-btn" style="width:44px; height:44px; background:#ff3b30; border:none; cursor:pointer; color:white; font-size:18px; border-radius:4px; display:flex; align-items:center; justify-content:center;" title="Hapus galeri ini">🗑️</button>
+          <button type="button" class="delete-result-btn" data-no-sound style="width:44px; height:44px; background:#ff3b30; border:none; cursor:pointer; color:white; font-size:18px; border-radius:4px; display:flex; align-items:center; justify-content:center;" title="Hapus galeri ini">🗑️</button>
         </div>
       </div>
     `;
@@ -754,6 +794,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Tombol Hapus (Delete)
       const deleteBtn = e.target.closest('.delete-result-btn');
       if (deleteBtn) {
+        playDeleteSound();
         const card = deleteBtn.closest('[id^="card-"], [id^="photocard-"]');
         if (card) {
           card.style.animation = 'fadeOut 0.3s ease-out forwards';
@@ -1248,6 +1289,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (qrClearBtn && qrInput && qrResult) {
     qrClearBtn.addEventListener('click', () => {
+      playDeleteSound();
       qrInput.value = '';
       qrInput.style.height = 'auto';
       qrInput.focus();

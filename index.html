@@ -210,7 +210,7 @@
           <div class="ios-input-group">
             <textarea id="qr-input" placeholder="Tempel link atau teks di sini..." autocomplete="off" rows="1"></textarea>
             <div style="display: flex; gap: 6px;">
-              <button id="qr-clear-btn" class="ios-btn-secondary" title="Hapus">
+              <button id="qr-clear-btn" class="ios-btn-secondary" title="Hapus" data-no-sound>
                 <i class="fa-solid fa-trash"></i>
               </button>
               <button id="qr-generate-btn" class="ios-btn-primary">
@@ -267,7 +267,7 @@
           <div class="ios-input-group">
             <textarea id="media-url" placeholder="Tempel link video di sini... (bisa beberapa link, satu per baris, maks 5)" autocomplete="off" rows="1"></textarea>
             <div style="display: flex; gap: 6px;">
-              <button id="clear-link-btn" class="ios-btn-secondary" title="Hapus link">
+              <button id="clear-link-btn" class="ios-btn-secondary" title="Hapus link" data-no-sound>
                 <i class="fa-solid fa-trash"></i>
               </button>
               <button id="download-btn" class="ios-btn-primary">
@@ -307,7 +307,7 @@
           <div id="history-box" style="margin-top:16px; max-height:150px; overflow-y:auto; border-radius:4px; padding:10px; display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
               <p style="font-size:12px; font-weight:600;">📜 History Download</p>
-              <button type="button" id="clear-history-btn" style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; text-decoration:underline;">Hapus</button>
+              <button type="button" id="clear-history-btn" data-no-sound style="background:none; border:none; color:var(--accent-red); font-size:11px; cursor:pointer; text-decoration:underline;">Hapus</button>
             </div>
             <div id="history-list"></div>
           </div>
