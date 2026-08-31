@@ -2,7 +2,7 @@
 
 Web app (PWA) buat download media dari berbagai platform sosial, dibungkus dalam satu "hub" ala link-in-bio bergaya vintage/iOS.
 
-🔗 **Demo:** allmenu-phi.vercel.app *(sesuaikan kalau domainnya beda)*
+🔗 **Web:** allmenu-phi.vercel.app
 
 ---
 
