@@ -1281,69 +1281,128 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ---------- Tools: QR Code Generator ----------
-  const qrInput = document.getElementById('qr-input');
-  const qrGenerateBtn = document.getElementById('qr-generate-btn');
-  const qrClearBtn = document.getElementById('qr-clear-btn');
-  const qrResult = document.getElementById('qr-result');
+  // ---------- Tools: Status WA HD ----------
+  const statusHdFileInput = document.getElementById('status-hd-file-input');
+  const statusHdDropzone = document.getElementById('status-hd-dropzone');
+  const statusHdDropzoneText = document.getElementById('status-hd-dropzone-text');
+  const statusHdFileInfo = document.getElementById('status-hd-file-info');
+  const statusHdFileName = document.getElementById('status-hd-file-name');
+  const statusHdFileRemove = document.getElementById('status-hd-file-remove');
+  const statusHdAutotrim = document.getElementById('status-hd-autotrim');
+  const statusHdConvertBtn = document.getElementById('status-hd-convert-btn');
+  const statusHdResult = document.getElementById('status-hd-result');
 
-  if (qrClearBtn && qrInput && qrResult) {
-    qrClearBtn.addEventListener('click', () => {
-      playDeleteSound();
-      qrInput.value = '';
-      qrInput.style.height = 'auto';
-      qrInput.focus();
-      qrResult.style.display = 'none';
-      qrResult.innerHTML = '';
+  if (statusHdFileInput && statusHdDropzone && statusHdConvertBtn && statusHdResult) {
+    let statusHdSelectedFile = null;
+    const statusHdBtnDefaultHtml = statusHdConvertBtn.innerHTML;
+
+    const formatFileSize = (bytes) => {
+      if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    };
+
+    const setSelectedFile = (file) => {
+      statusHdSelectedFile = file || null;
+      statusHdResult.style.display = 'none';
+      statusHdResult.innerHTML = '';
+      if (statusHdSelectedFile) {
+        statusHdFileName.textContent = `${statusHdSelectedFile.name} (${formatFileSize(statusHdSelectedFile.size)})`;
+        statusHdFileInfo.style.display = 'flex';
+        statusHdDropzone.style.display = 'none';
+        statusHdConvertBtn.disabled = false;
+      } else {
+        statusHdFileInfo.style.display = 'none';
+        statusHdDropzone.style.display = 'block';
+        statusHdConvertBtn.disabled = true;
+        statusHdFileInput.value = '';
+      }
+    };
+
+    statusHdDropzone.addEventListener('click', () => statusHdFileInput.click());
+
+    statusHdFileInput.addEventListener('change', () => {
+      if (statusHdFileInput.files && statusHdFileInput.files[0]) {
+        setSelectedFile(statusHdFileInput.files[0]);
+      }
     });
-  }
 
-  if (qrGenerateBtn && qrInput && qrResult) {
-    const qrBtnDefaultHtml = qrGenerateBtn.innerHTML;
-    qrGenerateBtn.addEventListener('click', async () => {
-      const text = qrInput.value.trim();
-      if (!text) { alert('Isi link atau teks dulu!'); return; }
+    ['dragover', 'dragenter'].forEach((evt) => {
+      statusHdDropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        statusHdDropzone.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'dragend'].forEach((evt) => {
+      statusHdDropzone.addEventListener(evt, () => statusHdDropzone.classList.remove('dragover'));
+    });
+    statusHdDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      statusHdDropzone.classList.remove('dragover');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file && file.type.startsWith('video/')) {
+        setSelectedFile(file);
+      } else if (file) {
+        alert('File harus berupa video.');
+      }
+    });
 
-      setBtnLoading(qrGenerateBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i>', qrBtnDefaultHtml);
-      qrResult.style.display = 'block';
-      qrResult.innerHTML = '<div class="url-preview-skeleton" style="margin:0 auto; width:180px; height:180px; border-radius:8px;"></div>';
+    if (statusHdFileRemove) {
+      statusHdFileRemove.addEventListener('click', () => {
+        playDeleteSound();
+        setSelectedFile(null);
+      });
+    }
 
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(text)}`;
+    statusHdConvertBtn.addEventListener('click', async () => {
+      if (!statusHdSelectedFile) { alert('Pilih video dulu!'); return; }
+
+      setBtnLoading(statusHdConvertBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...', statusHdBtnDefaultHtml);
+      statusHdResult.style.display = 'block';
+      statusHdResult.innerHTML = '<div class="url-preview-skeleton" style="margin:0 auto; width:100%; max-width:260px; height:160px; border-radius:8px;"></div><p style="font-size:11px; color:var(--text-sub); margin-top:8px;">Video sedang diproses di server, mohon tunggu...</p>';
+
+      const autoTrim = statusHdAutotrim ? statusHdAutotrim.checked : true;
+      const formData = new FormData();
+      formData.append('file', statusHdSelectedFile);
+
       try {
-        const res = await fetch(qrApiUrl);
-        if (!res.ok) throw new Error('Gagal membuat QR code.');
+        const res = await fetch(`${YTDLP_API_URL}/status-hd?auto_trim=${autoTrim}`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (!res.ok) {
+          let message = 'Gagal memproses video.';
+          try {
+            const errData = await res.json();
+            message = errData.detail?.message || errData.detail || message;
+          } catch {}
+          throw new Error(message);
+        }
         const blob = await res.blob();
         const blobUrl = URL.createObjectURL(blob);
-        qrResult.innerHTML = `
-          <img src="${blobUrl}" alt="QR code">
+        statusHdResult.innerHTML = `
+          <video src="${blobUrl}" controls playsinline></video>
           <div style="margin-top:8px;">
-            <button type="button" id="qr-download-btn" class="ios-btn-secondary" style="padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
-              <i class="fa-solid fa-download"></i> Simpan QR
+            <button type="button" id="status-hd-download-btn" class="ios-btn-secondary" style="padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
+              <i class="fa-solid fa-download"></i> Simpan Video
             </button>
           </div>
         `;
-        const qrDownloadBtn = document.getElementById('qr-download-btn');
-        if (qrDownloadBtn) {
-          qrDownloadBtn.addEventListener('click', () => {
+        const statusHdDownloadBtn = document.getElementById('status-hd-download-btn');
+        if (statusHdDownloadBtn) {
+          statusHdDownloadBtn.addEventListener('click', () => {
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = 'qrcode.png';
+            a.download = 'status_wa_hd.mp4';
             document.body.appendChild(a);
             a.click();
             a.remove();
           });
         }
       } catch (err) {
-        qrResult.innerHTML = `<span style="color:var(--accent-red); font-size:12px;">❌ ${escapeHtml(err.message)}</span>`;
+        statusHdResult.innerHTML = `<span style="color:var(--accent-red); font-size:12px;">❌ ${escapeHtml(err.message)}</span>`;
       } finally {
-        setBtnLoading(qrGenerateBtn, false, '', qrBtnDefaultHtml);
+        setBtnLoading(statusHdConvertBtn, false, '', statusHdBtnDefaultHtml);
       }
-    });
-
-    // Auto-resize textarea QR, sama kayak input link utama
-    qrInput.addEventListener('input', () => {
-      qrInput.style.height = 'auto';
-      qrInput.style.height = Math.min(qrInput.scrollHeight, 90) + 'px';
     });
   }
 

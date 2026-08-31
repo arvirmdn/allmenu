@@ -205,20 +205,33 @@
         <h2 class="section-label">Tools</h2>
 
         <div class="ios-card" style="padding:16px;">
-          <p style="font-size:12px; font-weight:600; margin-bottom:4px;"><i class="fa-solid fa-qrcode" style="color:var(--ios-blue); margin-right:6px;"></i>QR Code Generator</p>
-          <p style="font-size:11px; color:var(--text-sub); margin-bottom:10px;">Bikin QR code dari link atau teks apa saja — misal buat share link web ini.</p>
-          <div class="ios-input-group">
-            <textarea id="qr-input" placeholder="Tempel link atau teks di sini..." autocomplete="off" rows="1"></textarea>
-            <div style="display: flex; gap: 6px;">
-              <button id="qr-clear-btn" class="ios-btn-secondary" title="Hapus" data-no-sound>
-                <i class="fa-solid fa-trash"></i>
-              </button>
-              <button id="qr-generate-btn" class="ios-btn-primary">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-              </button>
-            </div>
+          <p style="font-size:12px; font-weight:600; margin-bottom:4px;"><i class="fa-brands fa-whatsapp" style="color:#25D366; margin-right:6px;"></i>Status WA HD</p>
+          <p style="font-size:11px; color:var(--text-sub); margin-bottom:10px;">Upload video, kami proses ulang di server biar pas di-upload/forward ke Status WhatsApp kualitasnya tetap jernih — nggak burik kena kompres WA.</p>
+
+          <input type="file" id="status-hd-file-input" accept="video/*" style="display:none;">
+          <div id="status-hd-dropzone" class="status-hd-dropzone">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span id="status-hd-dropzone-text">Ketuk untuk pilih video, atau tarik file ke sini</span>
           </div>
-          <div id="qr-result" class="qr-result" style="display:none;"></div>
+
+          <div id="status-hd-file-info" class="status-hd-file-info" style="display:none;">
+            <i class="fa-solid fa-file-video"></i>
+            <span id="status-hd-file-name"></span>
+            <button type="button" id="status-hd-file-remove" class="ios-btn-icon" title="Hapus" data-no-sound>
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <label class="status-hd-checkbox-row">
+            <input type="checkbox" id="status-hd-autotrim" checked>
+            <span>Potong otomatis ke 30 detik pertama (batas 1 segmen Status WA)</span>
+          </label>
+
+          <button id="status-hd-convert-btn" class="ios-btn-primary" style="width:100%; margin-top:10px; padding:10px; border:none; border-radius:4px; cursor:pointer;" disabled>
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Proses Video
+          </button>
+
+          <div id="status-hd-result" class="status-hd-result" style="display:none;"></div>
         </div>
       </section>
 
