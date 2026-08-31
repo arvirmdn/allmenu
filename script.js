@@ -1243,7 +1243,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---------- Tools: QR Code Generator ----------
   const qrInput = document.getElementById('qr-input');
   const qrGenerateBtn = document.getElementById('qr-generate-btn');
+  const qrClearBtn = document.getElementById('qr-clear-btn');
   const qrResult = document.getElementById('qr-result');
+
+  if (qrClearBtn && qrInput && qrResult) {
+    qrClearBtn.addEventListener('click', () => {
+      qrInput.value = '';
+      qrInput.style.height = 'auto';
+      qrInput.focus();
+      qrResult.style.display = 'none';
+      qrResult.innerHTML = '';
+    });
+  }
 
   if (qrGenerateBtn && qrInput && qrResult) {
     const qrBtnDefaultHtml = qrGenerateBtn.innerHTML;

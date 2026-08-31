@@ -209,9 +209,14 @@
           <p style="font-size:11px; color:var(--text-sub); margin-bottom:10px;">Bikin QR code dari link atau teks apa saja — misal buat share link web ini.</p>
           <div class="ios-input-group">
             <textarea id="qr-input" placeholder="Tempel link atau teks di sini..." autocomplete="off" rows="1"></textarea>
-            <button id="qr-generate-btn" class="ios-btn-primary">
-              <i class="fa-solid fa-wand-magic-sparkles"></i>
-            </button>
+            <div style="display: flex; gap: 6px;">
+              <button id="qr-clear-btn" class="ios-btn-secondary" title="Hapus">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+              <button id="qr-generate-btn" class="ios-btn-primary">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+              </button>
+            </div>
           </div>
           <div id="qr-result" class="qr-result" style="display:none;"></div>
         </div>
