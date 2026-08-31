@@ -1303,6 +1303,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const setSelectedFile = (file) => {
       statusHdSelectedFile = file || null;
+      stopStatusHdProgress();
       statusHdResult.style.display = 'none';
       statusHdResult.innerHTML = '';
       if (statusHdSelectedFile) {
@@ -1358,7 +1359,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       setBtnLoading(statusHdConvertBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...', statusHdBtnDefaultHtml);
       statusHdResult.style.display = 'block';
-      statusHdResult.innerHTML = '<div class="url-preview-skeleton" style="margin:0 auto; width:100%; max-width:260px; height:160px; border-radius:8px;"></div><p style="font-size:11px; color:var(--text-sub); margin-top:8px;">Video sedang diproses di server, mohon tunggu...</p>';
+      statusHdResult.innerHTML = renderStatusHdProgressCard();
+      startStatusHdProgress();
 
       const autoTrim = statusHdAutotrim ? statusHdAutotrim.checked : true;
       const formData = new FormData();
@@ -1378,32 +1380,112 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error(message);
         }
         const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        statusHdResult.innerHTML = `
-          <video src="${blobUrl}" controls playsinline></video>
-          <div style="margin-top:8px;">
-            <button type="button" id="status-hd-download-btn" class="ios-btn-secondary" style="padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
-              <i class="fa-solid fa-download"></i> Simpan Video
-            </button>
-          </div>
-        `;
-        const statusHdDownloadBtn = document.getElementById('status-hd-download-btn');
-        if (statusHdDownloadBtn) {
-          statusHdDownloadBtn.addEventListener('click', () => {
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = 'status_wa_hd.mp4';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-          });
-        }
+        stopStatusHdProgress();
+        renderStatusHdSuccess(blob);
       } catch (err) {
+        stopStatusHdProgress();
         statusHdResult.innerHTML = `<span style="color:var(--accent-red); font-size:12px;">❌ ${escapeHtml(err.message)}</span>`;
       } finally {
         setBtnLoading(statusHdConvertBtn, false, '', statusHdBtnDefaultHtml);
       }
     });
+
+    // ---------- Progress card sendiri buat Status HD (pesan berputar + timer) ----------
+    let statusHdProgressInterval = null;
+    let statusHdMessageInterval = null;
+    const statusHdMessages = [
+      'Mengupload video ke server...',
+      'Memproses ulang kualitas video...',
+      'Menyesuaikan bitrate biar nggak dikompres ulang WA...',
+      'Merapikan audio & format...',
+      'Hampir selesai...',
+    ];
+
+    function renderStatusHdProgressCard() {
+      return `
+        <div class="progress-card">
+          <div class="progress-header"><i class="fa-solid fa-spinner fa-spin"></i> <span id="status-hd-progress-label">${escapeHtml(statusHdMessages[0])}</span></div>
+          <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
+          <div class="progress-elapsed">Sudah berjalan <span id="status-hd-progress-elapsed">0</span> detik</div>
+        </div>
+      `;
+    }
+
+    function startStatusHdProgress() {
+      stopStatusHdProgress();
+      const startedAt = Date.now();
+      statusHdProgressInterval = setInterval(() => {
+        const el = document.getElementById('status-hd-progress-elapsed');
+        if (!el) return;
+        el.textContent = Math.floor((Date.now() - startedAt) / 1000);
+      }, 1000);
+
+      let msgIndex = 0;
+      statusHdMessageInterval = setInterval(() => {
+        const labelEl = document.getElementById('status-hd-progress-label');
+        if (!labelEl) return;
+        msgIndex = Math.min(msgIndex + 1, statusHdMessages.length - 1);
+        labelEl.style.opacity = '0';
+        setTimeout(() => {
+          labelEl.textContent = statusHdMessages[msgIndex];
+          labelEl.style.opacity = '1';
+        }, 200);
+      }, 2600);
+    }
+
+    function stopStatusHdProgress() {
+      if (statusHdProgressInterval) { clearInterval(statusHdProgressInterval); statusHdProgressInterval = null; }
+      if (statusHdMessageInterval) { clearInterval(statusHdMessageInterval); statusHdMessageInterval = null; }
+    }
+
+    // ---------- Hasil: preview + Bagikan ke WhatsApp (Web Share API) / Simpan ----------
+    function renderStatusHdSuccess(blob) {
+      const blobUrl = URL.createObjectURL(blob);
+      const canShareFiles = !!(navigator.canShare && navigator.share);
+
+      statusHdResult.innerHTML = `
+        <video src="${blobUrl}" controls playsinline></video>
+        <div style="margin-top:8px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+          ${canShareFiles ? `
+          <button type="button" id="status-hd-share-btn" class="ios-btn-primary" style="padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
+            <i class="fa-brands fa-whatsapp"></i> Bagikan ke WhatsApp
+          </button>` : ''}
+          <button type="button" id="status-hd-download-btn" class="ios-btn-secondary" style="padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
+            <i class="fa-solid fa-download"></i> Simpan Video
+          </button>
+        </div>
+      `;
+
+      const statusHdDownloadBtn = document.getElementById('status-hd-download-btn');
+      if (statusHdDownloadBtn) {
+        statusHdDownloadBtn.addEventListener('click', () => {
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = 'status_wa_hd.mp4';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        });
+      }
+
+      const statusHdShareBtn = document.getElementById('status-hd-share-btn');
+      if (statusHdShareBtn) {
+        statusHdShareBtn.addEventListener('click', async () => {
+          const file = new File([blob], 'status_wa_hd.mp4', { type: blob.type || 'video/mp4' });
+          if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+            alert('Browser/perangkat ini belum support share video langsung. Pakai tombol "Simpan Video", lalu attach manual di WhatsApp ya.');
+            return;
+          }
+          try {
+            await navigator.share({ files: [file], title: 'Status WA HD' });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              alert('Gagal membuka menu bagikan. Coba pakai tombol "Simpan Video" sebagai gantinya.');
+            }
+          }
+        });
+      }
+    }
   }
 
   // ---------- Universal Button Sound Effect ----------

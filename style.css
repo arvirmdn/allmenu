@@ -1097,6 +1097,10 @@ body::before {
   margin-bottom: 10px;
 }
 
+.progress-header span {
+  transition: opacity 0.2s ease;
+}
+
 .progress-bar-track {
   width: 100%;
   height: 6px;
