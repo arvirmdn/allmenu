@@ -2,7 +2,7 @@
 // biar web bisa dibuka lebih cepat & tetap kebuka walau koneksi lemot.
 // SENGAJA tidak cache endpoint API (/download, /proxy, dst) — itu harus
 // selalu fresh dari server, jangan sampai ke-cache dan basi.
-const CACHE_NAME = 'allmenu-shell-v1';
+const CACHE_NAME = 'allmenu-shell-v2';
 const APP_SHELL = [
   './index.html',
   './style.css',
