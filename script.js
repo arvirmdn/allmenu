@@ -472,7 +472,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (index >= playlist.length) index = 0;
     currentTrackIndex = index;
     const track = playlist[currentTrackIndex];
-    bgMusic.src = track.src;
+    // track.src disimpan sebagai link stream mentah hasil pencarian musik
+    // (bukan file audio langsung), jadi harus lewat /proxy-audio dulu —
+    // sama seperti pola yang dipakai playMusicTrack() di atas — supaya
+    // header Referer/User-Agent-nya benar dan tidak kena CORS.
+    const filename = `${track.title || 'audio'}.mp3`;
+    bgMusic.src = `${YTDLP_API_URL}/proxy-audio?source=${encodeURIComponent(track.src)}&filename=${encodeURIComponent(filename)}`;
     bgMusic.play().then(() => {
       isPlaying = true;
       renderPlaylist();
