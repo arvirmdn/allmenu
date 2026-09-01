@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const bgMusic = document.getElementById('bg-music');
   const playlistModal = document.getElementById('playlist-modal');
   const playlistCloseBtn = document.getElementById('playlist-close');
+  const playlistShuffleBtn = document.getElementById('playlist-shuffle');
   const playlistListEl = document.getElementById('playlist-list');
   const nowPlayingBar = document.getElementById('playlist-now-playing');
   const nowPlayingTitle = document.getElementById('now-playing-title');
@@ -132,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentTrackIndex = -1;
   let isPlaying = false;
+  let shuffleMode = false;
   let selectedQuality = '720';
   const urlPreviewBox = document.getElementById('url-preview-box');
   const previewCache = new Map(); // key: `${url}|${quality}` -> { data, source }
@@ -354,19 +356,24 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     playlistListEl.innerHTML = playlist.map((track, i) => `
-      <button type="button" class="playlist-item${i === currentTrackIndex ? ' active' : ''}" data-index="${i}">
-        <div class="playlist-item-icon">
-          <i class="fa-solid ${i === currentTrackIndex && isPlaying ? 'fa-pause' : 'fa-play'}"></i>
-        </div>
-        <div class="playlist-item-text">
-          <span class="playlist-item-title">${escapeHtml(track.title)}</span>
-          <span class="playlist-item-artist">${escapeHtml(track.artist || '')}</span>
-        </div>
-        ${i === currentTrackIndex && isPlaying ? '<i class="fa-solid fa-volume-high playlist-item-wave"></i>' : ''}
-      </button>
+      <div class="playlist-track-row${i === currentTrackIndex ? ' active' : ''}" data-index="${i}">
+        <button type="button" class="playlist-track-play" data-index="${i}" aria-label="Putar">
+          <div class="playlist-item-icon">
+            <i class="fa-solid ${i === currentTrackIndex && isPlaying ? 'fa-pause' : 'fa-play'}"></i>
+          </div>
+          <div class="playlist-item-text">
+            <span class="playlist-item-title">${escapeHtml(track.title)}</span>
+            <span class="playlist-item-artist">${escapeHtml(track.artist || '')}</span>
+          </div>
+          ${i === currentTrackIndex && isPlaying ? '<i class="fa-solid fa-volume-high playlist-item-wave"></i>' : ''}
+        </button>
+        <button type="button" class="playlist-track-delete" data-index="${i}" aria-label="Hapus dari playlist">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
     `).join('');
 
-    playlistListEl.querySelectorAll('.playlist-item').forEach(btn => {
+    playlistListEl.querySelectorAll('.playlist-track-play').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.getAttribute('data-index'), 10);
         if (idx === currentTrackIndex) {
@@ -376,6 +383,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+
+    playlistListEl.querySelectorAll('.playlist-track-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.getAttribute('data-index'), 10);
+        deleteFromPlaylist(idx);
+      });
+    });
+  }
+
+  // Ambil index lagu acak di playlist, sebisa mungkin beda dari index yang sedang main.
+  function getRandomTrackIndex(excludeIndex) {
+    if (playlist.length <= 1) return 0;
+    let idx;
+    do {
+      idx = Math.floor(Math.random() * playlist.length);
+    } while (idx === excludeIndex);
+    return idx;
+  }
+
+  function updateShuffleButtonUI() {
+    if (!playlistShuffleBtn) return;
+    playlistShuffleBtn.classList.toggle('active', shuffleMode);
+  }
+
+  // Tombol acak: nyala/matiin mode acak, dan kalau baru dinyalakan langsung
+  // putar satu lagu acak biar kelihatan efeknya.
+  function toggleShuffleMode() {
+    if (!playlist.length) return;
+    shuffleMode = !shuffleMode;
+    updateShuffleButtonUI();
+    if (shuffleMode) {
+      playTrack(getRandomTrackIndex(currentTrackIndex));
+    }
+  }
+
+  // Hapus satu lagu dari playlist (dipanggil dari tombol hapus per-item).
+  function deleteFromPlaylist(index) {
+    if (index < 0 || index >= playlist.length) return;
+    const track = playlist[index];
+    if (!confirm(`Hapus "${track.title}" dari playlist?`)) return;
+    playDeleteSound();
+
+    const wasCurrent = index === currentTrackIndex;
+    playlist.splice(index, 1);
+
+    if (!playlist.length) {
+      currentTrackIndex = -1;
+      isPlaying = false;
+      bgMusic.pause();
+      bgMusic.removeAttribute('src');
+    } else if (wasCurrent) {
+      bgMusic.pause();
+      isPlaying = false;
+      currentTrackIndex = -1;
+    } else if (index < currentTrackIndex) {
+      currentTrackIndex -= 1;
+    }
+
+    savePlaylistToStorage();
+    renderPlaylist();
+    updateNowPlayingUI();
+    updateMusicBadge();
   }
 
   function updateNowPlayingUI() {
@@ -431,13 +501,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   bgMusic.addEventListener('ended', () => {
-    if (playlist.length) playTrack(currentTrackIndex + 1);
+    if (!playlist.length) return;
+    if (shuffleMode) {
+      playTrack(getRandomTrackIndex(currentTrackIndex));
+    } else {
+      playTrack(currentTrackIndex + 1);
+    }
   });
 
   function openPlaylistModal() {
     if (!playlistModal) return;
     renderPlaylist();
     updateNowPlayingUI();
+    updateShuffleButtonUI();
     playlistModal.classList.add('open');
     playlistModal.setAttribute('aria-hidden', 'false');
   }
@@ -452,6 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
     musicBtn.addEventListener('click', openPlaylistModal);
   }
   if (playlistCloseBtn) playlistCloseBtn.addEventListener('click', closePlaylistModal);
+  if (playlistShuffleBtn) playlistShuffleBtn.addEventListener('click', toggleShuffleMode);
   if (playlistModal) {
     playlistModal.addEventListener('click', (e) => {
       if (e.target === playlistModal) closePlaylistModal();
@@ -459,7 +536,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (nowPlayingToggleBtn) nowPlayingToggleBtn.addEventListener('click', togglePlayPause);
   if (nowPlayingPrevBtn) nowPlayingPrevBtn.addEventListener('click', () => playTrack(currentTrackIndex - 1));
-  if (nowPlayingNextBtn) nowPlayingNextBtn.addEventListener('click', () => playTrack(currentTrackIndex + 1));
+  if (nowPlayingNextBtn) nowPlayingNextBtn.addEventListener('click', () => {
+    if (!playlist.length) return;
+    if (shuffleMode) {
+      playTrack(getRandomTrackIndex(currentTrackIndex));
+    } else {
+      playTrack(currentTrackIndex + 1);
+    }
+  });
 
   platformBtns.forEach(btn => {
     btn.addEventListener('click', () => {
