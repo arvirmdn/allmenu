@@ -931,6 +931,12 @@ body::before {
   font-size: 14px;
 }
 
+.music-add-playlist-btn.added {
+  background: var(--ios-blue);
+  border-color: var(--ios-blue);
+  color: #fff;
+}
+
 .music-mini-player {
   position: absolute;
   left: 8px;

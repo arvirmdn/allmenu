@@ -2,7 +2,7 @@
 
 Web app (PWA) buat download media dari berbagai platform sosial, dibungkus dalam satu "hub" ala link-in-bio bergaya vintage/iOS.
 
-🔗 **Web Downloader & tools lainnya:** https://allmenu-phi.vercel.app/ 
+🔗 **Demo:** https://arvirmdn.github.io *(sesuaikan kalau domainnya beda)*
 
 ---
 
@@ -51,7 +51,7 @@ Murni **static site** — HTML/CSS/JS biasa, tanpa build step, tanpa framework. 
 Frontend ini butuh **backend API terpisah** (lihat folder `backend/` — FastAPI/Python) buat proses download sebenarnya (yt-dlp). URL backend-nya di-hardcode di `script.js`:
 
 ```js
-const YTDLP_API_URL = 'https://web.up.railway.app';
+const YTDLP_API_URL = 'https://web-production-0c5698.up.railway.app';
 ```
 
 Kalau kamu deploy backend sendiri, **ganti URL ini** ke domain backend kamu.

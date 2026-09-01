@@ -1332,6 +1332,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="ios-btn-icon music-play-btn" data-idx="${idx}" aria-label="Play">
             <i class="fa-solid fa-play"></i>
           </button>
+          <button type="button" class="ios-btn-icon music-add-playlist-btn${isTrackInPlaylist(item) ? ' added' : ''}" data-idx="${idx}" aria-label="Tambah ke playlist">
+            <i class="fa-solid ${isTrackInPlaylist(item) ? 'fa-check' : 'fa-plus'}"></i>
+          </button>
           <button type="button" class="ios-btn-icon music-download-btn" data-idx="${idx}" aria-label="Download">
             <i class="fa-solid fa-download"></i>
           </button>
@@ -1351,7 +1354,63 @@ document.addEventListener('DOMContentLoaded', () => {
         if (item) downloadMusicTrack(item, btn);
       });
     });
+    musicSearchResults.querySelectorAll('.music-add-playlist-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const item = items[Number(btn.getAttribute('data-idx'))];
+        if (item) toggleAddToPlaylist(item, btn);
+      });
+    });
   }
+
+  // Cek apakah sebuah hasil pencarian musik sudah ada di playlist tersimpan
+  // (dicocokkan lewat url stream-nya, biar aman walau judul mirip).
+  function isTrackInPlaylist(item) {
+    return playlist.some((t) => t.src === item.url);
+  }
+
+  function toggleAddToPlaylist(item, btnEl) {
+    const existingIndex = playlist.findIndex((t) => t.src === item.url);
+    const icon = btnEl.querySelector('i');
+
+    if (existingIndex !== -1) {
+      // Sudah ada di playlist -> klik lagi buat menghapusnya dari playlist.
+      playlist.splice(existingIndex, 1);
+      if (currentTrackIndex === existingIndex) currentTrackIndex = -1;
+      else if (currentTrackIndex > existingIndex) currentTrackIndex -= 1;
+      btnEl.classList.remove('added');
+      if (icon) icon.className = 'fa-solid fa-plus';
+    } else {
+      playlist.push({
+        title: item.title || 'Tanpa Judul',
+        artist: item.artist || '',
+        src: item.url,
+        thumbnail: item.thumbnail || '',
+      });
+      btnEl.classList.add('added');
+      if (icon) icon.className = 'fa-solid fa-check';
+    }
+
+    savePlaylistToStorage();
+    renderPlaylist();
+  }
+
+  function savePlaylistToStorage() {
+    try {
+      localStorage.setItem('musicPlaylist', JSON.stringify(playlist));
+    } catch {}
+  }
+
+  function loadPlaylistFromStorage() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('musicPlaylist') || '[]');
+      if (Array.isArray(saved)) {
+        saved.forEach((t) => {
+          if (t && t.src) playlist.push(t);
+        });
+      }
+    } catch {}
+  }
+  loadPlaylistFromStorage();
 
   async function runMusicSearch() {
     const query = (musicSearchInput?.value || '').trim();
@@ -1381,6 +1440,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (musicSearchInput) {
     musicSearchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); runMusicSearch(); }
+    });
+  }
+
+  // Tombol sampah: cuma bersihkan kolom input + hasil pencarian yang lagi
+  // tampil (tidak menyentuh playlist yang sudah tersimpan).
+  const musicSearchClearBtn = document.getElementById('music-search-clear-btn');
+  if (musicSearchClearBtn) {
+    musicSearchClearBtn.addEventListener('click', () => {
+      if (musicSearchInput) musicSearchInput.value = '';
+      if (musicSearchResults) musicSearchResults.innerHTML = '';
+      setMusicStatus('');
+      musicSearchInput?.focus();
     });
   }
 
