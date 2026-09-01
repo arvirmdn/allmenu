@@ -859,6 +859,143 @@ body::before {
   text-overflow: ellipsis;
 }
 
+/* ---------- Cari Musik ---------- */
+.music-search-status {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-sub);
+  text-align: center;
+}
+
+.music-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.music-result-item {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.music-result-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--input-bg);
+}
+
+.music-result-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.music-result-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-result-meta {
+  font-size: 11px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-result-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.music-result-actions .ios-btn-icon {
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+}
+
+.music-mini-player {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 75px;
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--tab-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(33, 22, 17, 0.22);
+}
+
+.music-mini-thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--input-bg);
+}
+
+.music-mini-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.music-mini-title {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-mini-artist {
+  font-size: 10px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-mini-progress-wrap {
+  width: 100%;
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.music-mini-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--ios-blue);
+}
+
 /* ---------- Progress bar (dipakai saat unduh file beneran via /proxy) ---------- */
 .progress-bar-wrap {
   width: 100%;

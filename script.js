@@ -544,6 +544,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return apiRequest(`${YTDLP_API_URL}/download-photo?url=${encodeURIComponent(url)}`);
   }
 
+  async function callMusicSearchApi(query, limit = 15) {
+    return apiRequest(`${YTDLP_API_URL}/search-music?q=${encodeURIComponent(query)}&limit=${limit}`);
+  }
+
   // Fallback khusus foto/slide TikTok lewat TikWM (dipakai kalau instance Railway sedang tidur/down)
   async function callTikwmPhotoFallback(url) {
     const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
@@ -1277,6 +1281,226 @@ document.addEventListener('DOMContentLoaded', () => {
       } finally {
         setBtnLoading(thumbBtn, false, '', thumbBtnDefaultHtml);
         if (downloadBtn) downloadBtn.disabled = false;
+      }
+    });
+  }
+
+  // ---------- Cari Musik ----------
+  const musicSearchInput = document.getElementById('music-search-input');
+  const musicSearchBtn = document.getElementById('music-search-btn');
+  const musicSearchStatus = document.getElementById('music-search-status');
+  const musicSearchResults = document.getElementById('music-search-results');
+  const musicPlayer = document.getElementById('music-search-player');
+  const musicMiniPlayer = document.getElementById('music-mini-player');
+  const musicMiniThumb = document.getElementById('music-mini-thumb');
+  const musicMiniTitle = document.getElementById('music-mini-title');
+  const musicMiniArtist = document.getElementById('music-mini-artist');
+  const musicMiniToggle = document.getElementById('music-mini-toggle');
+  const musicMiniDownload = document.getElementById('music-mini-download');
+  const musicMiniClose = document.getElementById('music-mini-close');
+  const musicMiniProgressWrap = document.getElementById('music-mini-progress-wrap');
+  const musicMiniProgressFill = document.getElementById('music-mini-progress-fill');
+
+  let currentMusicTrack = null; // { title, artist, thumbnail, url }
+  let musicIsLoading = false;
+
+  function setMusicStatus(text) {
+    if (!musicSearchStatus) return;
+    if (!text) {
+      musicSearchStatus.style.display = 'none';
+      musicSearchStatus.textContent = '';
+    } else {
+      musicSearchStatus.style.display = 'block';
+      musicSearchStatus.textContent = text;
+    }
+  }
+
+  function renderMusicResults(items) {
+    if (!musicSearchResults) return;
+    if (!items || !items.length) {
+      musicSearchResults.innerHTML = '';
+      return;
+    }
+    musicSearchResults.innerHTML = items.map((item, idx) => `
+      <div class="music-result-item" data-idx="${idx}">
+        <img class="music-result-thumb" src="${escapeHtml(item.thumbnail || '')}" alt="" loading="lazy">
+        <div class="music-result-text">
+          <span class="music-result-title">${escapeHtml(item.title)}</span>
+          <span class="music-result-meta">${escapeHtml(item.artist || '')}${item.duration ? ' • ' + formatDuration(item.duration) : ''}</span>
+        </div>
+        <div class="music-result-actions">
+          <button type="button" class="ios-btn-icon music-play-btn" data-idx="${idx}" aria-label="Play">
+            <i class="fa-solid fa-play"></i>
+          </button>
+          <button type="button" class="ios-btn-icon music-download-btn" data-idx="${idx}" aria-label="Download">
+            <i class="fa-solid fa-download"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    musicSearchResults.querySelectorAll('.music-play-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const item = items[Number(btn.getAttribute('data-idx'))];
+        if (item) playMusicTrack(item, btn);
+      });
+    });
+    musicSearchResults.querySelectorAll('.music-download-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const item = items[Number(btn.getAttribute('data-idx'))];
+        if (item) downloadMusicTrack(item, btn);
+      });
+    });
+  }
+
+  async function runMusicSearch() {
+    const query = (musicSearchInput?.value || '').trim();
+    if (!query) { alert('Ketik dulu judul lagu atau nama artisnya ya.'); return; }
+    if (musicIsLoading) return;
+
+    setBtnLoading(musicSearchBtn, true, '<i class="fa-solid fa-spinner fa-spin"></i>', '<i class="fa-solid fa-magnifying-glass"></i>');
+    setMusicStatus('🔎 Mencari lagu...');
+    musicSearchResults.innerHTML = '';
+
+    try {
+      const data = await callMusicSearchApi(query, 15);
+      renderMusicResults(data.items || []);
+      setMusicStatus(data.items && data.items.length ? '' : 'Tidak ada hasil ditemukan.');
+    } catch (err) {
+      if (err.status === 429) {
+        setMusicStatus(`⏳ ${err.message}`);
+      } else {
+        setMusicStatus(`❌ ${err.message || 'Gagal mencari lagu, coba lagi ya.'}`);
+      }
+    } finally {
+      setBtnLoading(musicSearchBtn, false, '', '<i class="fa-solid fa-magnifying-glass"></i>');
+    }
+  }
+
+  if (musicSearchBtn) musicSearchBtn.addEventListener('click', runMusicSearch);
+  if (musicSearchInput) {
+    musicSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); runMusicSearch(); }
+    });
+  }
+
+  function showMusicMiniPlayer(track) {
+    if (!musicMiniPlayer) return;
+    musicMiniThumb.src = track.thumbnail || '';
+    musicMiniTitle.textContent = track.title || 'Tanpa Judul';
+    musicMiniArtist.textContent = track.artist || '';
+    musicMiniPlayer.style.display = 'flex';
+  }
+
+  function setMusicPlayIcon(playing) {
+    const btns = musicSearchResults ? musicSearchResults.querySelectorAll('.music-play-btn i') : [];
+    btns.forEach((i) => { i.className = 'fa-solid fa-play'; });
+    if (currentMusicTrack && currentMusicTrack._btn) {
+      const icon = currentMusicTrack._btn.querySelector('i');
+      if (icon) icon.className = playing ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+    }
+    if (musicMiniToggle) {
+      musicMiniToggle.innerHTML = playing
+        ? '<i class="fa-solid fa-pause"></i>'
+        : '<i class="fa-solid fa-play"></i>';
+    }
+  }
+
+  async function playMusicTrack(track, btnEl) {
+    // Klik lagu yang sama lagi => toggle play/pause, bukan fetch ulang.
+    if (currentMusicTrack && currentMusicTrack.url === track.url && musicPlayer.src) {
+      if (musicPlayer.paused) { musicPlayer.play().catch(() => {}); } else { musicPlayer.pause(); }
+      return;
+    }
+
+    currentMusicTrack = { ...track, _btn: btnEl };
+    showMusicMiniPlayer(track);
+    if (btnEl) btnEl.querySelector('i').className = 'fa-solid fa-spinner fa-spin';
+    if (musicMiniToggle) musicMiniToggle.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    musicMiniProgressFill.style.width = '0%';
+
+    try {
+      // Streaming lewat /proxy-audio (bukan langsung link CDN yt-dlp) supaya
+      // header Referer/User-Agent-nya benar dan tidak kena masalah CORS,
+      // sama seperti pola proxy-image & proxy-audio yang sudah ada.
+      const filename = `${track.title || 'audio'}.mp3`;
+      musicPlayer.src = `${YTDLP_API_URL}/proxy-audio?source=${encodeURIComponent(track.url)}&filename=${encodeURIComponent(filename)}`;
+      await musicPlayer.play();
+    } catch (err) {
+      setMusicStatus(`❌ Gagal memutar lagu: ${err.message || 'coba lagi ya.'}`);
+      if (btnEl) btnEl.querySelector('i').className = 'fa-solid fa-play';
+      setMusicPlayIcon(false);
+    }
+  }
+
+  async function downloadMusicTrack(track, btnEl) {
+    const defaultHtml = '<i class="fa-solid fa-download"></i>';
+    setBtnLoading(btnEl, true, '<i class="fa-solid fa-spinner fa-spin"></i>', defaultHtml);
+    try {
+      const data = await callYtdlpAudioApi(track.url);
+      const downloadUrl = data.download_url;
+      if (!downloadUrl) throw new Error('Link download tidak tersedia.');
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `${track.title || 'audio'}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      saveHistory({ title: track.title, platform: 'musik (youtube)' });
+      renderHistory();
+    } catch (err) {
+      alert(`Gagal mengunduh lagu: ${err.message || 'coba lagi ya.'}`);
+    } finally {
+      setBtnLoading(btnEl, false, '', defaultHtml);
+    }
+  }
+
+  if (musicMiniToggle) {
+    musicMiniToggle.addEventListener('click', () => {
+      if (!musicPlayer.src) return;
+      if (musicPlayer.paused) { musicPlayer.play().catch(() => {}); } else { musicPlayer.pause(); }
+    });
+  }
+
+  if (musicMiniDownload) {
+    musicMiniDownload.addEventListener('click', () => {
+      if (currentMusicTrack) downloadMusicTrack(currentMusicTrack, musicMiniDownload);
+    });
+  }
+
+  if (musicMiniClose) {
+    musicMiniClose.addEventListener('click', () => {
+      musicPlayer.pause();
+      musicPlayer.removeAttribute('src');
+      musicPlayer.load();
+      musicMiniPlayer.style.display = 'none';
+      setMusicPlayIcon(false);
+      currentMusicTrack = null;
+    });
+  }
+
+  if (musicMiniProgressWrap) {
+    musicMiniProgressWrap.addEventListener('click', (e) => {
+      if (!musicPlayer.duration) return;
+      const rect = musicMiniProgressWrap.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+      musicPlayer.currentTime = ratio * musicPlayer.duration;
+    });
+  }
+
+  if (musicPlayer) {
+    musicPlayer.addEventListener('playing', () => setMusicPlayIcon(true));
+    musicPlayer.addEventListener('pause', () => setMusicPlayIcon(false));
+    musicPlayer.addEventListener('ended', () => setMusicPlayIcon(false));
+    musicPlayer.addEventListener('timeupdate', () => {
+      if (musicPlayer.duration) {
+        musicMiniProgressFill.style.width = `${(musicPlayer.currentTime / musicPlayer.duration) * 100}%`;
+      }
+    });
+    musicPlayer.addEventListener('error', () => {
+      if (currentMusicTrack) {
+        setMusicStatus('❌ Gagal memutar lagu ini, coba lagu lain ya.');
+        setMusicPlayIcon(false);
       }
     });
   }

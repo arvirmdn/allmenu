@@ -200,6 +200,47 @@
       </div>
     </div>
 
+    <main id="tab-music" class="tab-content">
+      <section class="ios-section">
+        <h2 class="section-label">Cari Musik</h2>
+
+        <div class="ios-card music-search-card">
+          <div class="ios-input-group">
+            <input type="text" id="music-search-input" placeholder="Cari judul lagu atau nama artis..." autocomplete="off">
+            <button id="music-search-btn" class="ios-btn-primary">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </div>
+
+          <div id="music-search-status" class="music-search-status" style="display:none;"></div>
+
+          <div id="music-search-results" class="music-search-results"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Mini player: muncul saat ada lagu hasil pencarian yang sedang diputar -->
+    <div id="music-mini-player" class="music-mini-player" style="display:none;">
+      <img id="music-mini-thumb" class="music-mini-thumb" src="" alt="">
+      <div class="music-mini-info">
+        <span id="music-mini-title" class="music-mini-title">-</span>
+        <span id="music-mini-artist" class="music-mini-artist">-</span>
+        <div class="music-mini-progress-wrap" id="music-mini-progress-wrap">
+          <div id="music-mini-progress-fill" class="music-mini-progress-fill"></div>
+        </div>
+      </div>
+      <button type="button" id="music-mini-toggle" class="ios-btn-icon" aria-label="Play/Pause">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+      </button>
+      <button type="button" id="music-mini-download" class="ios-btn-icon" aria-label="Download">
+        <i class="fa-solid fa-download"></i>
+      </button>
+      <button type="button" id="music-mini-close" class="ios-btn-icon" aria-label="Tutup">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <audio id="music-search-player"></audio>
+
     <main id="tab-tools" class="tab-content">
       <section class="ios-section coming-soon-section">
         <div class="coming-soon-hero">
@@ -316,6 +357,10 @@
           <span class="stack-icon stack-instagram"><i class="fa-brands fa-instagram"></i></span>
         </span>
         <span>Downloader</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-music">
+        <i class="fa-solid fa-music" aria-hidden="true"></i>
+        <span>Musik</span>
       </button>
       <button class="tab-btn" data-tab="tab-tools">
         <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i>
